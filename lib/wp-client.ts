@@ -25,7 +25,7 @@ function wpFetch(path: string, init?: RequestInit) {
   const pass = process.env.WP_APP_PASSWORD
   const credentials = Buffer.from(`${user}:${pass}`).toString('base64')
 
-  return fetch(`${base}/wp-json/wpte/v2${path}`, {
+  return fetch(`${base}/wp-json/whholidays/v1${path}`, {
     ...init,
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -132,7 +132,7 @@ export async function getBooking(id: string): Promise<Booking> {
 
 export async function getCustomers(): Promise<Customer[]> {
   if (USE_MOCK) return [...mockCustomers]
-  const res = await wpFetch('/enquiries')
+  const res = await wpFetch('/customers')
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
   return res.json()
 }
@@ -143,7 +143,7 @@ export async function getCustomer(id: string): Promise<Customer> {
     if (!customer) throw new Error('Customer not found')
     return customer
   }
-  const res = await wpFetch(`/enquiries/${id}`)
+  const res = await wpFetch(`/customers/${id}`)
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
   return res.json()
 }
