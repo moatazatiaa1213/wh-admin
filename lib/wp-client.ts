@@ -17,7 +17,7 @@ import { mockExcursions } from '@/lib/mock/excursions'
 
 const USE_MOCK = process.env.USE_MOCK_DATA === 'true'
 
-// ─── WP fetch helper ────────────────────────────────────────────────────────
+// ─── WP fetch helpers ───────────────────────────────────────────────────────
 
 function wpFetch(path: string, init?: RequestInit) {
   const base = process.env.WP_BASE_URL
@@ -33,6 +33,26 @@ function wpFetch(path: string, init?: RequestInit) {
       ...(init?.headers ?? {}),
     },
   })
+}
+
+/**
+ * Fetches a list endpoint. Returns an empty array instead of throwing when the
+ * server responds with an error (e.g. 404 while the plugin is being updated).
+ * Write operations should still use wpFetch() directly so failures surface.
+ */
+async function wpList<T>(path: string): Promise<T[]> {
+  try {
+    const res = await wpFetch(path)
+    if (!res.ok) {
+      console.warn(`[wp-client] GET ${path} → ${res.status} (returning [])`)
+      return []
+    }
+    return res.json()
+  } catch (e) {
+    console.warn(`[wp-client] GET ${path} failed:`, e)
+    return []
+  }
+}
 }
 
 // ─── Trips ──────────────────────────────────────────────────────────────────
@@ -53,9 +73,7 @@ export async function getTrips(params?: { search?: string; status?: string }): P
   const qs = new URLSearchParams()
   if (params?.search) qs.set('search', params.search)
   if (params?.status) qs.set('status', params.status)
-  const res = await wpFetch(`/tours?${qs}`)
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Trip>(`/tours?${qs}`)
 }
 
 export async function getTrip(id: string): Promise<Trip> {
@@ -112,9 +130,7 @@ export async function getBookings(params?: { status?: string }): Promise<Booking
   }
   const qs = new URLSearchParams()
   if (params?.status) qs.set('status', params.status)
-  const res = await wpFetch(`/bookings?${qs}`)
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Booking>(`/bookings?${qs}`)
 }
 
 export async function getBooking(id: string): Promise<Booking> {
@@ -132,9 +148,7 @@ export async function getBooking(id: string): Promise<Booking> {
 
 export async function getCustomers(): Promise<Customer[]> {
   if (USE_MOCK) return [...mockCustomers]
-  const res = await wpFetch('/customers')
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Customer>('/customers')
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
@@ -152,9 +166,7 @@ export async function getCustomer(id: string): Promise<Customer> {
 
 export async function getPackages(): Promise<Package[]> {
   if (USE_MOCK) return [...mockPackages]
-  const res = await wpFetch('/packages')
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Package>('/packages')
 }
 
 export async function getPackage(id: string): Promise<Package> {
@@ -207,9 +219,7 @@ export async function deletePackage(id: string): Promise<void> {
 
 export async function getCities(): Promise<City[]> {
   if (USE_MOCK) return [...mockCities]
-  const res = await wpFetch('/cities')
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<City>('/cities')
 }
 
 export async function getCity(id: string): Promise<City> {
@@ -260,9 +270,7 @@ export async function deleteCity(id: string): Promise<void> {
 
 export async function getHotels(): Promise<Hotel[]> {
   if (USE_MOCK) return [...mockHotels]
-  const res = await wpFetch('/hotels')
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Hotel>('/hotels')
 }
 
 export async function getHotel(id: string): Promise<Hotel> {
@@ -313,9 +321,7 @@ export async function deleteHotel(id: string): Promise<void> {
 
 export async function getAirlines(): Promise<Airline[]> {
   if (USE_MOCK) return [...mockAirlines]
-  const res = await wpFetch('/airlines')
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Airline>('/airlines')
 }
 
 export async function getAirline(id: string): Promise<Airline> {
@@ -366,9 +372,7 @@ export async function deleteAirline(id: string): Promise<void> {
 
 export async function getExcursions(): Promise<Excursion[]> {
   if (USE_MOCK) return [...mockExcursions]
-  const res = await wpFetch('/excursions')
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
-  return res.json()
+  return wpList<Excursion>('/excursions')
 }
 
 export async function getExcursion(id: string): Promise<Excursion> {

@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'WHH_NS', 'whholidays/v1' );
 
+// Flush rewrite rules on activation so REST routes register immediately.
+register_activation_hook( __FILE__, function () { flush_rewrite_rules(); } );
+
 // ─── Register all routes ──────────────────────────────────────────────────────
 
 add_action( 'rest_api_init', function () {
