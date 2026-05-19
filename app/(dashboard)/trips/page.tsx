@@ -10,6 +10,16 @@ interface Props {
   searchParams: { search?: string; status?: string }
 }
 
+function fmtDate(raw: string) {
+  if (!raw) return '—'
+  // Tour Master may return DD/MM/YYYY — normalise to a parseable form
+  const parts = raw.split('/')
+  const iso = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : raw
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return raw
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 export default async function TripsPage({ searchParams }: Props) {
   const trips = await getTrips({
     search: searchParams.search,
@@ -87,9 +97,9 @@ export default async function TripsPage({ searchParams }: Props) {
                   </td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.destination}</td>
                   <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">
-                    {new Date(trip.travel_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {fmtDate(trip.travel_date)}
                   </td>
-                  <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">${trip.price_adult.toLocaleString()}</td>
+                  <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">{trip.price_adult ? `$${Number(trip.price_adult).toLocaleString()}` : '—'}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.duration_days}D / {trip.duration_nights}N</td>
                   <td className="px-5 py-3.5"><StatusBadge status={trip.status} /></td>
                   <td className="px-5 py-3.5">

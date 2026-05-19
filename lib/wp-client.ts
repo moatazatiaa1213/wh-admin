@@ -53,7 +53,7 @@ export async function getTrips(params?: { search?: string; status?: string }): P
   const qs = new URLSearchParams()
   if (params?.search) qs.set('search', params.search)
   if (params?.status) qs.set('status', params.status)
-  const res = await wpFetch(`/trips?${qs}`)
+  const res = await wpFetch(`/tours?${qs}`)
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
   return res.json()
 }
@@ -64,7 +64,7 @@ export async function getTrip(id: string): Promise<Trip> {
     if (!trip) throw new Error('Trip not found')
     return trip
   }
-  const res = await wpFetch(`/trips/${id}`)
+  const res = await wpFetch(`/tours/${id}`)
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
   return res.json()
 }
@@ -75,7 +75,7 @@ export async function createTrip(data: TripInput): Promise<Trip> {
     mockTrips.push(trip)
     return trip
   }
-  const res = await wpFetch('/trips', { method: 'POST', body: JSON.stringify(data) })
+  const res = await wpFetch('/tours', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
   return res.json()
 }
@@ -87,7 +87,7 @@ export async function updateTrip(id: string, data: TripInput): Promise<Trip> {
     mockTrips[idx] = { ...mockTrips[idx], ...data }
     return mockTrips[idx]
   }
-  const res = await wpFetch(`/trips/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  const res = await wpFetch(`/tours/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
   return res.json()
 }
@@ -98,7 +98,7 @@ export async function deleteTrip(id: string): Promise<void> {
     if (idx !== -1) mockTrips.splice(idx, 1)
     return
   }
-  const res = await wpFetch(`/trips/${id}`, { method: 'DELETE' })
+  const res = await wpFetch(`/tours/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
 }
 
