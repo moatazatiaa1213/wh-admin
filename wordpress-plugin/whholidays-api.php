@@ -16,16 +16,16 @@ add_action( 'rest_api_init', function () {
 
     // Tours (Tour Master post type)
     register_rest_route( WHH_NS, '/tours', [
-        [ 'methods' => 'GET',  'callback' => 'whh_get_tours',   'permission_callback' => 'whh_auth' ],
+        [ 'methods' => 'GET',  'callback' => 'whh_get_tours',   'permission_callback' => 'whh_public' ],
         [ 'methods' => 'POST', 'callback' => 'whh_create_tour', 'permission_callback' => 'whh_auth' ],
     ] );
     register_rest_route( WHH_NS, '/tours/(?P<id>\d+)', [
-        [ 'methods' => 'GET',    'callback' => 'whh_get_tour',    'permission_callback' => 'whh_auth' ],
+        [ 'methods' => 'GET',    'callback' => 'whh_get_tour',    'permission_callback' => 'whh_public' ],
         [ 'methods' => 'PUT',    'callback' => 'whh_update_tour', 'permission_callback' => 'whh_auth' ],
         [ 'methods' => 'DELETE', 'callback' => 'whh_delete_tour', 'permission_callback' => 'whh_auth' ],
     ] );
 
-    // Bookings (Tour Master custom table — read only)
+    // Bookings (Tour Master custom table — read only, protected)
     register_rest_route( WHH_NS, '/bookings', [
         'methods' => 'GET', 'callback' => 'whh_get_bookings', 'permission_callback' => 'whh_auth',
     ] );
@@ -33,7 +33,7 @@ add_action( 'rest_api_init', function () {
         'methods' => 'GET', 'callback' => 'whh_get_booking', 'permission_callback' => 'whh_auth',
     ] );
 
-    // Customers (derived from booking records — read only)
+    // Customers (derived from booking records — read only, protected)
     register_rest_route( WHH_NS, '/customers', [
         'methods' => 'GET', 'callback' => 'whh_get_customers', 'permission_callback' => 'whh_auth',
     ] );
@@ -44,11 +44,11 @@ add_action( 'rest_api_init', function () {
     // Library entities: Cities, Hotels, Airlines, Excursions (stored in wp_options as JSON)
     foreach ( [ 'cities', 'hotels', 'airlines', 'excursions' ] as $entity ) {
         register_rest_route( WHH_NS, "/{$entity}", [
-            [ 'methods' => 'GET',  'callback' => "whh_get_{$entity}",    'permission_callback' => 'whh_auth' ],
+            [ 'methods' => 'GET',  'callback' => "whh_get_{$entity}",    'permission_callback' => 'whh_public' ],
             [ 'methods' => 'POST', 'callback' => "whh_create_{$entity}", 'permission_callback' => 'whh_auth' ],
         ] );
         register_rest_route( WHH_NS, "/{$entity}/(?P<id>[\\w-]+)", [
-            [ 'methods' => 'GET',    'callback' => "whh_get_{$entity}_item",    'permission_callback' => 'whh_auth' ],
+            [ 'methods' => 'GET',    'callback' => "whh_get_{$entity}_item",    'permission_callback' => 'whh_public' ],
             [ 'methods' => 'PUT',    'callback' => "whh_update_{$entity}_item", 'permission_callback' => 'whh_auth' ],
             [ 'methods' => 'DELETE', 'callback' => "whh_delete_{$entity}_item", 'permission_callback' => 'whh_auth' ],
         ] );
@@ -57,8 +57,14 @@ add_action( 'rest_api_init', function () {
 
 // ─── Authentication ───────────────────────────────────────────────────────────
 
+/** Write operations require editor+ capability */
 function whh_auth(): bool {
     return current_user_can( 'edit_posts' );
+}
+
+/** Read operations are public — tour data is not sensitive */
+function whh_public(): bool {
+    return true;
 }
 
 // ─── Tour Master: format a tour post ─────────────────────────────────────────
