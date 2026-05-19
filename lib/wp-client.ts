@@ -53,7 +53,6 @@ async function wpList<T>(path: string): Promise<T[]> {
     return []
   }
 }
-}
 
 // ─── Trips ──────────────────────────────────────────────────────────────────
 
