@@ -18,21 +18,10 @@ export const mockTrips: Trip[] = [
     featured_image: 'https://images.unsplash.com/photo-1585211969224-3e992986159d?w=800',
     status: 'published',
     created_at: '2026-01-15T10:00:00Z',
-    cities: [
-      { name: 'Gilgit', country: 'Pakistan', location: 'Gilgit-Baltistan, Northern Pakistan' },
-      { name: 'Hunza', country: 'Pakistan', location: 'Hunza-Nagar District, Gilgit-Baltistan' },
-    ],
-    hotels: [
-      { name: 'Serena Hotel Gilgit', stars: 4, location: 'Gilgit City, Gilgit-Baltistan', website: 'https://www.serenahotels.com' },
-      { name: 'Eagle\'s Nest Hotel', stars: 3, location: 'Duikar, Hunza', website: 'https://eaglesnesthunza.com' },
-    ],
-    airlines: [
-      { name: 'Pakistan International Airlines (PIA)', baggage_allowance: '23kg checked + 7kg carry-on' },
-    ],
-    excursions: [
-      { name: 'Attabad Lake Boat Ride', description: 'A scenic boat ride on the stunning turquoise Attabad Lake formed by the 2010 landslide.' },
-      { name: 'Baltit Fort Tour', description: 'Guided tour of the 700-year-old Baltit Fort, a UNESCO heritage site overlooking Karimabad.' },
-    ],
+    city_ids: ['city-1', 'city-2'],
+    hotel_ids: ['hotel-1', 'hotel-2'],
+    airline_ids: ['airline-1'],
+    excursion_ids: ['exc-1', 'exc-2'],
   },
   {
     id: 'trip-2',
@@ -51,21 +40,10 @@ export const mockTrips: Trip[] = [
     featured_image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
     status: 'published',
     created_at: '2026-01-20T10:00:00Z',
-    cities: [
-      { name: 'Mingora', country: 'Pakistan', location: 'Swat District, KPK' },
-      { name: 'Kalam', country: 'Pakistan', location: 'Upper Swat, KPK' },
-    ],
-    hotels: [
-      { name: 'Swat Serena Hotel', stars: 4, location: 'Saidu Sharif, Swat', website: 'https://www.serenahotels.com' },
-      { name: 'Kalam Guesthouse', stars: 2, location: 'Kalam Bazaar, Upper Swat' },
-    ],
-    airlines: [
-      { name: 'Pakistan International Airlines (PIA)', baggage_allowance: '20kg checked + 7kg carry-on' },
-    ],
-    excursions: [
-      { name: 'Mahodand Lake Day Trip', description: 'Full-day jeep excursion to the pristine Mahodand Lake, 35 km north of Kalam.' },
-      { name: 'Malam Jabba Ski Resort', description: 'Visit Pakistan\'s premier ski resort, operating as a summer adventure park with chairlifts and zip-lining.' },
-    ],
+    city_ids: ['city-4'],
+    hotel_ids: ['hotel-4'],
+    airline_ids: ['airline-1'],
+    excursion_ids: ['exc-4'],
   },
   {
     id: 'trip-3',
@@ -84,20 +62,10 @@ export const mockTrips: Trip[] = [
     featured_image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
     status: 'published',
     created_at: '2026-02-01T10:00:00Z',
-    cities: [
-      { name: 'Skardu', country: 'Pakistan', location: 'Skardu District, Gilgit-Baltistan' },
-    ],
-    hotels: [
-      { name: 'Shangrila Resort', stars: 4, location: 'Kachura Lake, Skardu', website: 'https://shangrilaresort.com.pk' },
-    ],
-    airlines: [
-      { name: 'Pakistan International Airlines (PIA)', baggage_allowance: '20kg checked + 7kg carry-on' },
-      { name: 'Serene Air', baggage_allowance: '15kg checked + 5kg carry-on' },
-    ],
-    excursions: [
-      { name: 'Deosai National Park', description: 'Day trip to one of the highest plateaus in the world, home to Himalayan brown bears and wildflowers.' },
-      { name: 'Satpara Lake', description: 'Visit the serene Satpara Lake and the ancient Satpara Buddha rock carvings.' },
-    ],
+    city_ids: ['city-3'],
+    hotel_ids: ['hotel-3'],
+    airline_ids: ['airline-1', 'airline-2'],
+    excursion_ids: ['exc-3'],
   },
   {
     id: 'trip-4',
@@ -115,16 +83,10 @@ export const mockTrips: Trip[] = [
     single_rate: 920,
     status: 'published',
     created_at: '2026-02-10T10:00:00Z',
-    cities: [
-      { name: 'Raikot', country: 'Pakistan', location: 'Diamer District, Gilgit-Baltistan' },
-    ],
-    hotels: [
-      { name: 'Fairy Meadows Cottages', stars: 2, location: 'Fairy Meadows, base of Nanga Parbat' },
-    ],
-    airlines: [],
-    excursions: [
-      { name: 'Nanga Parbat Base Camp Hike', description: 'A 3-4 hour hike from Fairy Meadows to Nanga Parbat Base Camp at 4,200m.' },
-    ],
+    city_ids: [],
+    hotel_ids: ['hotel-7'],
+    airline_ids: [],
+    excursion_ids: ['exc-7'],
   },
   {
     id: 'trip-5',
@@ -142,18 +104,10 @@ export const mockTrips: Trip[] = [
     single_rate: 1180,
     status: 'draft',
     created_at: '2026-03-01T10:00:00Z',
-    cities: [
-      { name: 'Chitral', country: 'Pakistan', location: 'Chitral District, KPK' },
-    ],
-    hotels: [
-      { name: 'Chitral Lodge', stars: 3, location: 'Shahi Qila Road, Chitral' },
-    ],
-    airlines: [
-      { name: 'Pakistan International Airlines (PIA)', baggage_allowance: '20kg checked + 7kg carry-on' },
-    ],
-    excursions: [
-      { name: 'Bumburet Valley Visit', description: 'Explore the largest Kalash valley, meet locals, and witness traditional wooden temples and dress.' },
-    ],
+    city_ids: ['city-6'],
+    hotel_ids: ['hotel-6'],
+    airline_ids: ['airline-1'],
+    excursion_ids: [],
   },
   {
     id: 'trip-6',
@@ -171,17 +125,10 @@ export const mockTrips: Trip[] = [
     single_rate: 1270,
     status: 'published',
     created_at: '2026-03-15T10:00:00Z',
-    cities: [
-      { name: 'Muzaffarabad', country: 'Pakistan', location: 'AJK Capital, Azad Kashmir' },
-      { name: 'Keran', country: 'Pakistan', location: 'Neelum Valley, Azad Kashmir' },
-    ],
-    hotels: [
-      { name: 'Neelum Valley Hotel', stars: 3, location: 'Athmuqam, Neelum Valley' },
-    ],
-    airlines: [],
-    excursions: [
-      { name: 'Ratti Gali Lake Trek', description: 'A stunning alpine lake trek at 3,650m, surrounded by meadows and snow-capped peaks.' },
-    ],
+    city_ids: ['city-7'],
+    hotel_ids: ['hotel-8'],
+    airline_ids: [],
+    excursion_ids: ['exc-8'],
   },
   {
     id: 'trip-7',
@@ -199,20 +146,10 @@ export const mockTrips: Trip[] = [
     single_rate: 4000,
     status: 'draft',
     created_at: '2026-04-01T10:00:00Z',
-    cities: [
-      { name: 'Skardu', country: 'Pakistan', location: 'Skardu District, Gilgit-Baltistan' },
-      { name: 'Askole', country: 'Pakistan', location: 'Last village before Baltoro Glacier' },
-    ],
-    hotels: [
-      { name: 'Concordia Camp', stars: 1, location: 'Concordia, Karakoram Range (tented camp)' },
-    ],
-    airlines: [
-      { name: 'Pakistan International Airlines (PIA)', baggage_allowance: '20kg checked + 7kg carry-on' },
-    ],
-    excursions: [
-      { name: 'Baltoro Glacier Walk', description: 'Trek across the famous Baltoro Glacier, one of the longest glaciers outside the polar regions.' },
-      { name: 'Concordia Sunrise View', description: 'Witness sunrise over four 8,000m peaks: K2, Broad Peak, Gasherbrum I & II.' },
-    ],
+    city_ids: ['city-3', 'city-8'],
+    hotel_ids: [],
+    airline_ids: ['airline-1'],
+    excursion_ids: ['exc-5'],
   },
   {
     id: 'trip-8',
@@ -230,18 +167,9 @@ export const mockTrips: Trip[] = [
     single_rate: 560,
     status: 'published',
     created_at: '2026-04-10T10:00:00Z',
-    cities: [
-      { name: 'Lahore', country: 'Pakistan', location: 'Punjab Province, Eastern Pakistan' },
-    ],
-    hotels: [
-      { name: 'Pearl Continental Lahore', stars: 5, location: 'Shahrah-e-Quaid-e-Azam, Lahore', website: 'https://www.pchotels.com' },
-    ],
-    airlines: [
-      { name: 'Pakistan International Airlines (PIA)', baggage_allowance: '23kg checked + 7kg carry-on' },
-    ],
-    excursions: [
-      { name: 'Badshahi Mosque & Lahore Fort', description: 'Guided tour of the iconic 17th-century Badshahi Mosque and the UNESCO-listed Lahore Fort.' },
-      { name: 'Walled City Food Walk', description: 'Evening street food tour through the Walled City — tikka, nihari, and traditional sweets.' },
-    ],
+    city_ids: ['city-5'],
+    hotel_ids: ['hotel-5'],
+    airline_ids: ['airline-1'],
+    excursion_ids: ['exc-6'],
   },
 ]

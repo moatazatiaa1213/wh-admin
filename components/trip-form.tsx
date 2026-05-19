@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
@@ -16,36 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, X } from 'lucide-react'
-import type { Trip } from '@/lib/types'
+import { MultiSelect } from '@/components/multi-select'
+import type { Trip, City, Hotel, Airline, Excursion } from '@/lib/types'
 
-// ─── Sub-schemas ──────────────────────────────────────────────────────────────
-
-const citySchema = z.object({
-  name: z.string().min(1, 'Required'),
-  country: z.string().min(1, 'Required'),
-  location: z.string().min(1, 'Required'),
-})
-
-const hotelSchema = z.object({
-  name: z.string().min(1, 'Required'),
-  stars: z.coerce.number().int().min(1).max(5),
-  location: z.string().min(1, 'Required'),
-  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  website: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-})
-
-const airlineSchema = z.object({
-  name: z.string().min(1, 'Required'),
-  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  baggage_allowance: z.string().min(1, 'Required'),
-})
-
-const excursionSchema = z.object({
-  name: z.string().min(1, 'Required'),
-  description: z.string().min(1, 'Required'),
-  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-})
+// ─── Schema ──────────────────────────────────────────────────────────────────
 
 const tripSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -62,16 +36,20 @@ const tripSchema = z.object({
   single_rate: z.coerce.number().nonnegative('Must be 0 or more'),
   featured_image: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
   status: z.enum(['draft', 'published']),
-  cities: z.array(citySchema),
-  hotels: z.array(hotelSchema),
-  airlines: z.array(airlineSchema),
-  excursions: z.array(excursionSchema),
+  city_ids: z.array(z.string()),
+  hotel_ids: z.array(z.string()),
+  airline_ids: z.array(z.string()),
+  excursion_ids: z.array(z.string()),
 })
 
 type TripFormValues = z.infer<typeof tripSchema>
 
 interface TripFormProps {
   trip?: Trip
+  cities: City[]
+  hotels: Hotel[]
+  airlines: Airline[]
+  excursions: Excursion[]
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
@@ -87,7 +65,7 @@ function SectionHeader({ title }: { title: string }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function TripForm({ trip }: TripFormProps) {
+export function TripForm({ trip, cities, hotels, airlines, excursions }: TripFormProps) {
   const router = useRouter()
   const isEditing = !!trip
 
@@ -96,7 +74,6 @@ export function TripForm({ trip }: TripFormProps) {
     handleSubmit,
     setValue,
     watch,
-    control,
     formState: { errors },
   } = useForm<TripFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -116,17 +93,12 @@ export function TripForm({ trip }: TripFormProps) {
       single_rate: trip?.single_rate ?? undefined,
       featured_image: trip?.featured_image ?? '',
       status: trip?.status ?? 'draft',
-      cities: trip?.cities ?? [],
-      hotels: trip?.hotels ?? [],
-      airlines: trip?.airlines ?? [],
-      excursions: trip?.excursions ?? [],
+      city_ids: trip?.city_ids ?? [],
+      hotel_ids: trip?.hotel_ids ?? [],
+      airline_ids: trip?.airline_ids ?? [],
+      excursion_ids: trip?.excursion_ids ?? [],
     },
   })
-
-  const citiesArray = useFieldArray({ control, name: 'cities' })
-  const hotelsArray = useFieldArray({ control, name: 'hotels' })
-  const airlinesArray = useFieldArray({ control, name: 'airlines' })
-  const excursionsArray = useFieldArray({ control, name: 'excursions' })
 
   const mutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
@@ -149,7 +121,6 @@ export function TripForm({ trip }: TripFormProps) {
   const f = 'bg-[#09090b] border-[#1c1c1c] text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-sky-500'
   const lbl = 'text-xs font-medium text-zinc-400'
   const err = 'text-xs text-red-400 mt-1'
-  const card = 'bg-[#0d0d0d] border border-[#1c1c1c] rounded-lg p-4 space-y-3 relative'
 
   return (
     <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-5 max-w-3xl">
@@ -269,169 +240,57 @@ export function TripForm({ trip }: TripFormProps) {
       {/* ── Cities ── */}
       <SectionHeader title="Cities" />
 
-      <div className="space-y-3">
-        {citiesArray.fields.map((field, i) => (
-          <div key={field.id} className={card}>
-            <button
-              type="button"
-              onClick={() => citiesArray.remove(i)}
-              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
-            >
-              <X size={14} />
-            </button>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className={lbl}>City Name</Label>
-                <Input {...register(`cities.${i}.name`)} className={f} placeholder="Hunza" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className={lbl}>Country</Label>
-                <Input {...register(`cities.${i}.country`)} className={f} placeholder="Pakistan" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className={lbl}>Location</Label>
-                <Input {...register(`cities.${i}.location`)} className={f} placeholder="Gilgit-Baltistan, Northern Pakistan" />
-              </div>
-            </div>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => citiesArray.append({ name: '', country: 'Pakistan', location: '' })}
-          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
-        >
-          <Plus size={13} className="mr-1.5" /> Add City
-        </Button>
+      <div className="space-y-1.5">
+        <Label className={lbl}>Select Cities</Label>
+        <MultiSelect
+          options={cities.map(c => ({ id: c.id, label: c.name, sublabel: `${c.country} · ${c.location}` }))}
+          selected={watch('city_ids')}
+          onChange={ids => setValue('city_ids', ids)}
+          placeholder="Select cities…"
+          emptyMessage="No cities found. Create one in the Cities library."
+        />
       </div>
 
       {/* ── Hotels ── */}
       <SectionHeader title="Hotels" />
 
-      <div className="space-y-3">
-        {hotelsArray.fields.map((field, i) => (
-          <div key={field.id} className={card}>
-            <button
-              type="button"
-              onClick={() => hotelsArray.remove(i)}
-              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
-            >
-              <X size={14} />
-            </button>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className={lbl}>Hotel Name</Label>
-                <Input {...register(`hotels.${i}.name`)} className={f} placeholder="Serena Hotel" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className={lbl}>Stars (1–5)</Label>
-                <Input {...register(`hotels.${i}.stars`)} type="number" min="1" max="5" className={f} placeholder="4" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className={lbl}>Location</Label>
-              <Input {...register(`hotels.${i}.location`)} className={f} placeholder="City centre, near main bazaar" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className={lbl}>Photo URL <span className="text-zinc-600">(optional)</span></Label>
-                <Input {...register(`hotels.${i}.photo`)} type="url" className={f} placeholder="https://…" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className={lbl}>Website URL <span className="text-zinc-600">(optional)</span></Label>
-                <Input {...register(`hotels.${i}.website`)} type="url" className={f} placeholder="https://…" />
-              </div>
-            </div>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => hotelsArray.append({ name: '', stars: 3, location: '', photo: '', website: '' })}
-          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
-        >
-          <Plus size={13} className="mr-1.5" /> Add Hotel
-        </Button>
+      <div className="space-y-1.5">
+        <Label className={lbl}>Select Hotels</Label>
+        <MultiSelect
+          options={hotels.map(h => ({ id: h.id, label: h.name, sublabel: `${'★'.repeat(h.stars)} · ${h.location}` }))}
+          selected={watch('hotel_ids')}
+          onChange={ids => setValue('hotel_ids', ids)}
+          placeholder="Select hotels…"
+          emptyMessage="No hotels found. Create one in the Hotels library."
+        />
       </div>
 
       {/* ── Airlines ── */}
       <SectionHeader title="Airlines" />
 
-      <div className="space-y-3">
-        {airlinesArray.fields.map((field, i) => (
-          <div key={field.id} className={card}>
-            <button
-              type="button"
-              onClick={() => airlinesArray.remove(i)}
-              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
-            >
-              <X size={14} />
-            </button>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className={lbl}>Airline Name</Label>
-                <Input {...register(`airlines.${i}.name`)} className={f} placeholder="Pakistan International Airlines" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className={lbl}>Baggage Allowance</Label>
-                <Input {...register(`airlines.${i}.baggage_allowance`)} className={f} placeholder="23kg checked + 7kg carry-on" />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className={lbl}>Airline Logo URL <span className="text-zinc-600">(optional)</span></Label>
-              <Input {...register(`airlines.${i}.photo`)} type="url" className={f} placeholder="https://…" />
-            </div>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => airlinesArray.append({ name: '', baggage_allowance: '', photo: '' })}
-          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
-        >
-          <Plus size={13} className="mr-1.5" /> Add Airline
-        </Button>
+      <div className="space-y-1.5">
+        <Label className={lbl}>Select Airlines</Label>
+        <MultiSelect
+          options={airlines.map(a => ({ id: a.id, label: a.name, sublabel: a.baggage_allowance }))}
+          selected={watch('airline_ids')}
+          onChange={ids => setValue('airline_ids', ids)}
+          placeholder="Select airlines…"
+          emptyMessage="No airlines found. Create one in the Airlines library."
+        />
       </div>
 
       {/* ── Excursions ── */}
       <SectionHeader title="Excursions" />
 
-      <div className="space-y-3">
-        {excursionsArray.fields.map((field, i) => (
-          <div key={field.id} className={card}>
-            <button
-              type="button"
-              onClick={() => excursionsArray.remove(i)}
-              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
-            >
-              <X size={14} />
-            </button>
-            <div className="space-y-1.5">
-              <Label className={lbl}>Excursion Name</Label>
-              <Input {...register(`excursions.${i}.name`)} className={f} placeholder="Attabad Lake Boat Ride" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className={lbl}>Description</Label>
-              <Textarea {...register(`excursions.${i}.description`)} className={f} rows={2} placeholder="Describe this excursion…" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className={lbl}>Photo URL <span className="text-zinc-600">(optional)</span></Label>
-              <Input {...register(`excursions.${i}.photo`)} type="url" className={f} placeholder="https://…" />
-            </div>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => excursionsArray.append({ name: '', description: '', photo: '' })}
-          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
-        >
-          <Plus size={13} className="mr-1.5" /> Add Excursion
-        </Button>
+      <div className="space-y-1.5">
+        <Label className={lbl}>Select Excursions</Label>
+        <MultiSelect
+          options={excursions.map(e => ({ id: e.id, label: e.name, sublabel: e.description.slice(0, 80) + (e.description.length > 80 ? '…' : '') }))}
+          selected={watch('excursion_ids')}
+          onChange={ids => setValue('excursion_ids', ids)}
+          placeholder="Select excursions…"
+          emptyMessage="No excursions found. Create one in the Excursions library."
+        />
       </div>
 
       {/* ── Error / Submit ── */}

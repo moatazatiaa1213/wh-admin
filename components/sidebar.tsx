@@ -9,14 +9,25 @@ import {
   Users,
   Package,
   Plane,
+  MapPin,
+  Building2,
+  PlaneTakeoff,
+  Compass,
 } from 'lucide-react'
 
-const navItems = [
+const mainNav = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/trips', label: 'Trips', icon: Globe },
   { href: '/bookings', label: 'Bookings', icon: BookOpen },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/packages', label: 'Packages', icon: Package },
+]
+
+const libraryNav = [
+  { href: '/cities', label: 'Cities', icon: MapPin },
+  { href: '/hotels', label: 'Hotels', icon: Building2 },
+  { href: '/airlines', label: 'Airlines', icon: PlaneTakeoff },
+  { href: '/excursions', label: 'Excursions', icon: Compass },
 ]
 
 export function Sidebar() {
@@ -43,11 +54,29 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5">
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 px-2 pb-2">
           Main
         </p>
-        {navItems.map(({ href, label, icon: Icon }) => (
+        {mainNav.map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 cursor-pointer ${
+              isActive(href)
+                ? 'bg-zinc-900 text-zinc-50'
+                : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+            }`}
+          >
+            <Icon size={15} className={isActive(href) ? 'text-sky-500' : 'text-zinc-600'} />
+            {label}
+          </Link>
+        ))}
+
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 px-2 pt-4 pb-2">
+          Library
+        </p>
+        {libraryNav.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
