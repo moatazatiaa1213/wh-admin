@@ -41,6 +41,17 @@ add_action( 'rest_api_init', function () {
         'methods' => 'GET', 'callback' => 'whh_get_customer', 'permission_callback' => 'whh_auth',
     ] );
 
+    // Packages (stored in wp_options as JSON, linked to tours by ID)
+    register_rest_route( WHH_NS, '/packages', [
+        [ 'methods' => 'GET',  'callback' => 'whh_get_packages',   'permission_callback' => 'whh_public' ],
+        [ 'methods' => 'POST', 'callback' => 'whh_create_package', 'permission_callback' => 'whh_auth' ],
+    ] );
+    register_rest_route( WHH_NS, '/packages/(?P<id>[\\w-]+)', [
+        [ 'methods' => 'GET',    'callback' => 'whh_get_package',    'permission_callback' => 'whh_public' ],
+        [ 'methods' => 'PUT',    'callback' => 'whh_update_package', 'permission_callback' => 'whh_auth' ],
+        [ 'methods' => 'DELETE', 'callback' => 'whh_delete_package', 'permission_callback' => 'whh_auth' ],
+    ] );
+
     // Library entities: Cities, Hotels, Airlines, Excursions (stored in wp_options as JSON)
     foreach ( [ 'cities', 'hotels', 'airlines', 'excursions' ] as $entity ) {
         register_rest_route( WHH_NS, "/{$entity}", [
@@ -364,6 +375,69 @@ function whh_get_customer( WP_REST_Request $req ): WP_REST_Response {
     }
 
     return new WP_REST_Response( [ 'error' => 'Not found' ], 404 );
+}
+
+// ─── Packages ─────────────────────────────────────────────────────────────────
+// Stored in wp_options as JSON, linked to tours by post ID.
+
+function whh_get_packages( WP_REST_Request $req ): WP_REST_Response {
+    return new WP_REST_Response( array_values( whh_lib_all( 'packages' ) ), 200 );
+}
+
+function whh_get_package( WP_REST_Request $req ): WP_REST_Response {
+    return whh_lib_resp_get( 'packages', $req );
+}
+
+function whh_create_package( WP_REST_Request $req ): WP_REST_Response {
+    $data       = $req->get_json_params();
+    $trip_id    = sanitize_text_field( $data['trip_id'] ?? '' );
+    $trip_title = $trip_id ? ( get_the_title( (int) $trip_id ) ?: '' ) : '';
+
+    $items = whh_lib_all( 'packages' );
+    $item  = [
+        'id'         => uniqid( 'pkg-' ),
+        'name'       => sanitize_text_field( $data['name'] ?? '' ),
+        'price'      => (float) ( $data['price'] ?? 0 ),
+        'trip_id'    => $trip_id,
+        'trip_title' => $trip_title,
+        'inclusions' => sanitize_textarea_field( $data['inclusions'] ?? '' ),
+        'max_people' => (int) ( $data['max_people'] ?? 1 ),
+        'created_at' => gmdate( 'c' ),
+    ];
+    $items[] = $item;
+    whh_lib_save( 'packages', $items );
+    return new WP_REST_Response( $item, 201 );
+}
+
+function whh_update_package( WP_REST_Request $req ): WP_REST_Response {
+    $data    = $req->get_json_params();
+    $trip_id = sanitize_text_field( $data['trip_id'] ?? '' );
+
+    $items  = whh_lib_all( 'packages' );
+    $result = null;
+    foreach ( $items as &$item ) {
+        if ( ( $item['id'] ?? '' ) === $req['id'] ) {
+            $item = array_merge( $item, [
+                'name'       => sanitize_text_field( $data['name'] ?? $item['name'] ),
+                'price'      => (float) ( $data['price'] ?? $item['price'] ),
+                'trip_id'    => $trip_id ?: $item['trip_id'],
+                'trip_title' => $trip_id ? ( get_the_title( (int) $trip_id ) ?: $item['trip_title'] ) : $item['trip_title'],
+                'inclusions' => sanitize_textarea_field( $data['inclusions'] ?? $item['inclusions'] ),
+                'max_people' => (int) ( $data['max_people'] ?? $item['max_people'] ),
+            ], [ 'id' => $req['id'] ] );
+            $result = $item;
+            break;
+        }
+    }
+    if ( ! $result ) return new WP_REST_Response( [ 'error' => 'Not found' ], 404 );
+    whh_lib_save( 'packages', $items );
+    return new WP_REST_Response( $result, 200 );
+}
+
+function whh_delete_package( WP_REST_Request $req ): WP_REST_Response {
+    $items = array_filter( whh_lib_all( 'packages' ), fn( $i ) => ( $i['id'] ?? '' ) !== $req['id'] );
+    whh_lib_save( 'packages', array_values( $items ) );
+    return new WP_REST_Response( [ 'ok' => true ], 200 );
 }
 
 // ─── Library entities (Cities / Hotels / Airlines / Excursions) ───────────────
