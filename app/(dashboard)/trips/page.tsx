@@ -64,7 +64,7 @@ export default async function TripsPage({ searchParams }: Props) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1c1c1c]">
-              {['Title', 'Destination', 'Price', 'Duration', 'Status', 'Actions'].map(h => (
+              {['Title', 'Destination', 'Dates', 'Adult Price', 'Duration', 'Status', 'Actions'].map(h => (
                 <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-5 py-3">
                   {h}
                 </th>
@@ -74,10 +74,11 @@ export default async function TripsPage({ searchParams }: Props) {
           <tbody>
             {trips.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-12 text-center text-sm text-zinc-500">
+                <td colSpan={7} className="px-5 py-12 text-center text-sm text-zinc-500">
                   No trips found.
                 </td>
               </tr>
+
             ) : (
               trips.map(trip => (
                 <tr key={trip.id} className="border-b border-[#1c1c1c] last:border-0 hover:bg-zinc-900/40 transition-colors">
@@ -85,8 +86,11 @@ export default async function TripsPage({ searchParams }: Props) {
                     <p className="text-sm font-medium text-zinc-200">{trip.title}</p>
                   </td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.destination}</td>
-                  <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">${trip.price.toLocaleString()}</td>
-                  <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.duration}d</td>
+                  <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">
+                    {new Date(trip.travel_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </td>
+                  <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">${trip.price_adult.toLocaleString()}</td>
+                  <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.duration_days}D / {trip.duration_nights}N</td>
                   <td className="px-5 py-3.5"><StatusBadge status={trip.status} /></td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">

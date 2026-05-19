@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
@@ -16,16 +16,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Plus, X } from 'lucide-react'
 import type { Trip } from '@/lib/types'
+
+// ─── Sub-schemas ──────────────────────────────────────────────────────────────
+
+const citySchema = z.object({
+  name: z.string().min(1, 'Required'),
+  country: z.string().min(1, 'Required'),
+  location: z.string().min(1, 'Required'),
+})
+
+const hotelSchema = z.object({
+  name: z.string().min(1, 'Required'),
+  stars: z.coerce.number().int().min(1).max(5),
+  location: z.string().min(1, 'Required'),
+  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+  website: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+})
+
+const airlineSchema = z.object({
+  name: z.string().min(1, 'Required'),
+  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+  baggage_allowance: z.string().min(1, 'Required'),
+})
+
+const excursionSchema = z.object({
+  name: z.string().min(1, 'Required'),
+  description: z.string().min(1, 'Required'),
+  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+})
 
 const tripSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
+  trip_number: z.string().min(1, 'Trip number is required'),
   description: z.string().min(1, 'Description is required'),
   destination: z.string().min(1, 'Destination is required'),
-  price: z.coerce.number().positive('Price must be greater than 0'),
-  duration: z.coerce.number().int().positive('Duration must be a positive integer'),
+  travel_date: z.string().min(1, 'Travel date is required'),
+  end_date: z.string().min(1, 'End date is required'),
+  duration_days: z.coerce.number().int().positive('Must be a positive integer'),
+  duration_nights: z.coerce.number().int().positive('Must be a positive integer'),
+  price_adult: z.coerce.number().positive('Must be greater than 0'),
+  price_child: z.coerce.number().nonnegative('Must be 0 or more'),
+  deposit: z.coerce.number().nonnegative('Must be 0 or more'),
+  single_rate: z.coerce.number().nonnegative('Must be 0 or more'),
   featured_image: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
   status: z.enum(['draft', 'published']),
+  cities: z.array(citySchema),
+  hotels: z.array(hotelSchema),
+  airlines: z.array(airlineSchema),
+  excursions: z.array(excursionSchema),
 })
 
 type TripFormValues = z.infer<typeof tripSchema>
@@ -33,6 +73,19 @@ type TripFormValues = z.infer<typeof tripSchema>
 interface TripFormProps {
   trip?: Trip
 }
+
+// ─── Section header ───────────────────────────────────────────────────────────
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-3 pt-4">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 whitespace-nowrap">{title}</p>
+      <div className="flex-1 h-px bg-[#1c1c1c]" />
+    </div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function TripForm({ trip }: TripFormProps) {
   const router = useRouter()
@@ -43,20 +96,37 @@ export function TripForm({ trip }: TripFormProps) {
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<TripFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(tripSchema) as any,
     defaultValues: {
       title: trip?.title ?? '',
+      trip_number: trip?.trip_number ?? '',
       description: trip?.description ?? '',
       destination: trip?.destination ?? '',
-      price: trip?.price ?? undefined,
-      duration: trip?.duration ?? undefined,
+      travel_date: trip?.travel_date ?? '',
+      end_date: trip?.end_date ?? '',
+      duration_days: trip?.duration_days ?? undefined,
+      duration_nights: trip?.duration_nights ?? undefined,
+      price_adult: trip?.price_adult ?? undefined,
+      price_child: trip?.price_child ?? undefined,
+      deposit: trip?.deposit ?? undefined,
+      single_rate: trip?.single_rate ?? undefined,
       featured_image: trip?.featured_image ?? '',
       status: trip?.status ?? 'draft',
+      cities: trip?.cities ?? [],
+      hotels: trip?.hotels ?? [],
+      airlines: trip?.airlines ?? [],
+      excursions: trip?.excursions ?? [],
     },
   })
+
+  const citiesArray = useFieldArray({ control, name: 'cities' })
+  const hotelsArray = useFieldArray({ control, name: 'hotels' })
+  const airlinesArray = useFieldArray({ control, name: 'airlines' })
+  const excursionsArray = useFieldArray({ control, name: 'excursions' })
 
   const mutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
@@ -76,37 +146,49 @@ export function TripForm({ trip }: TripFormProps) {
     },
   })
 
-  const fieldClass = 'bg-[#09090b] border-[#1c1c1c] text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-sky-500'
-  const labelClass = 'text-xs font-medium text-zinc-400'
-  const errorClass = 'text-xs text-red-400 mt-1'
+  const f = 'bg-[#09090b] border-[#1c1c1c] text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-sky-500'
+  const lbl = 'text-xs font-medium text-zinc-400'
+  const err = 'text-xs text-red-400 mt-1'
+  const card = 'bg-[#0d0d0d] border border-[#1c1c1c] rounded-lg p-4 space-y-3 relative'
 
   return (
-    <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-5 max-w-2xl">
-      <div className="space-y-1.5">
-        <Label className={labelClass}>Title</Label>
-        <Input {...register('title')} className={fieldClass} placeholder="e.g. Hunza Valley Explorer" />
-        {errors.title && <p className={errorClass}>{errors.title.message}</p>}
+    <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-5 max-w-3xl">
+
+      {/* ── Basic Info ── */}
+      <SectionHeader title="Basic Information" />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className={lbl}>Trip Title</Label>
+          <Input {...register('title')} className={f} placeholder="e.g. Hunza Valley Explorer" />
+          {errors.title && <p className={err}>{errors.title.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label className={lbl}>Trip Number</Label>
+          <Input {...register('trip_number')} className={f} placeholder="e.g. WH-001" />
+          {errors.trip_number && <p className={err}>{errors.trip_number.message}</p>}
+        </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label className={labelClass}>Description</Label>
-        <Textarea {...register('description')} className={fieldClass} rows={4} placeholder="Describe the trip..." />
-        {errors.description && <p className={errorClass}>{errors.description.message}</p>}
+        <Label className={lbl}>Description</Label>
+        <Textarea {...register('description')} className={f} rows={3} placeholder="Describe the trip…" />
+        {errors.description && <p className={err}>{errors.description.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={labelClass}>Destination</Label>
-          <Input {...register('destination')} className={fieldClass} placeholder="e.g. Hunza, Gilgit-Baltistan" />
-          {errors.destination && <p className={errorClass}>{errors.destination.message}</p>}
+          <Label className={lbl}>Destination</Label>
+          <Input {...register('destination')} className={f} placeholder="e.g. Hunza, Gilgit-Baltistan" />
+          {errors.destination && <p className={err}>{errors.destination.message}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label className={labelClass}>Status</Label>
+          <Label className={lbl}>Status</Label>
           <Select
             defaultValue={watch('status')}
             onValueChange={val => setValue('status', val as 'draft' | 'published')}
           >
-            <SelectTrigger className={fieldClass}>
+            <SelectTrigger className={f}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#111111] border-[#1c1c1c]">
@@ -117,32 +199,249 @@ export function TripForm({ trip }: TripFormProps) {
         </div>
       </div>
 
+      {/* ── Dates & Duration ── */}
+      <SectionHeader title="Dates & Duration" />
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={labelClass}>Price (USD)</Label>
-          <Input {...register('price')} type="number" min="0" step="0.01" className={fieldClass} placeholder="1200" />
-          {errors.price && <p className={errorClass}>{errors.price.message}</p>}
+          <Label className={lbl}>Travel Date</Label>
+          <Input {...register('travel_date')} type="date" className={f} />
+          {errors.travel_date && <p className={err}>{errors.travel_date.message}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label className={labelClass}>Duration (days)</Label>
-          <Input {...register('duration')} type="number" min="1" className={fieldClass} placeholder="7" />
-          {errors.duration && <p className={errorClass}>{errors.duration.message}</p>}
+          <Label className={lbl}>End Date</Label>
+          <Input {...register('end_date')} type="date" className={f} />
+          {errors.end_date && <p className={err}>{errors.end_date.message}</p>}
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className={labelClass}>Featured Image URL <span className="text-zinc-600">(optional)</span></Label>
-        <Input {...register('featured_image')} type="url" className={fieldClass} placeholder="https://..." />
-        {errors.featured_image && <p className={errorClass}>{errors.featured_image.message}</p>}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className={lbl}>Duration (Days)</Label>
+          <Input {...register('duration_days')} type="number" min="1" className={f} placeholder="7" />
+          {errors.duration_days && <p className={err}>{errors.duration_days.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label className={lbl}>Duration (Nights)</Label>
+          <Input {...register('duration_nights')} type="number" min="1" className={f} placeholder="6" />
+          {errors.duration_nights && <p className={err}>{errors.duration_nights.message}</p>}
+        </div>
       </div>
 
+      {/* ── Pricing ── */}
+      <SectionHeader title="Pricing (USD)" />
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className={lbl}>Adult Price</Label>
+          <Input {...register('price_adult')} type="number" min="0" step="0.01" className={f} placeholder="1200" />
+          {errors.price_adult && <p className={err}>{errors.price_adult.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label className={lbl}>Child Price</Label>
+          <Input {...register('price_child')} type="number" min="0" step="0.01" className={f} placeholder="800" />
+          {errors.price_child && <p className={err}>{errors.price_child.message}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className={lbl}>Deposit</Label>
+          <Input {...register('deposit')} type="number" min="0" step="0.01" className={f} placeholder="300" />
+          {errors.deposit && <p className={err}>{errors.deposit.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label className={lbl}>Single Rate</Label>
+          <Input {...register('single_rate')} type="number" min="0" step="0.01" className={f} placeholder="1450" />
+          {errors.single_rate && <p className={err}>{errors.single_rate.message}</p>}
+        </div>
+      </div>
+
+      {/* ── Featured Image ── */}
+      <SectionHeader title="Featured Image" />
+
+      <div className="space-y-1.5">
+        <Label className={lbl}>Image URL <span className="text-zinc-600">(optional)</span></Label>
+        <Input {...register('featured_image')} type="url" className={f} placeholder="https://…" />
+        {errors.featured_image && <p className={err}>{errors.featured_image.message}</p>}
+      </div>
+
+      {/* ── Cities ── */}
+      <SectionHeader title="Cities" />
+
+      <div className="space-y-3">
+        {citiesArray.fields.map((field, i) => (
+          <div key={field.id} className={card}>
+            <button
+              type="button"
+              onClick={() => citiesArray.remove(i)}
+              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
+            >
+              <X size={14} />
+            </button>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className={lbl}>City Name</Label>
+                <Input {...register(`cities.${i}.name`)} className={f} placeholder="Hunza" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={lbl}>Country</Label>
+                <Input {...register(`cities.${i}.country`)} className={f} placeholder="Pakistan" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={lbl}>Location</Label>
+                <Input {...register(`cities.${i}.location`)} className={f} placeholder="Gilgit-Baltistan, Northern Pakistan" />
+              </div>
+            </div>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => citiesArray.append({ name: '', country: 'Pakistan', location: '' })}
+          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
+        >
+          <Plus size={13} className="mr-1.5" /> Add City
+        </Button>
+      </div>
+
+      {/* ── Hotels ── */}
+      <SectionHeader title="Hotels" />
+
+      <div className="space-y-3">
+        {hotelsArray.fields.map((field, i) => (
+          <div key={field.id} className={card}>
+            <button
+              type="button"
+              onClick={() => hotelsArray.remove(i)}
+              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
+            >
+              <X size={14} />
+            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className={lbl}>Hotel Name</Label>
+                <Input {...register(`hotels.${i}.name`)} className={f} placeholder="Serena Hotel" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={lbl}>Stars (1–5)</Label>
+                <Input {...register(`hotels.${i}.stars`)} type="number" min="1" max="5" className={f} placeholder="4" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={lbl}>Location</Label>
+              <Input {...register(`hotels.${i}.location`)} className={f} placeholder="City centre, near main bazaar" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className={lbl}>Photo URL <span className="text-zinc-600">(optional)</span></Label>
+                <Input {...register(`hotels.${i}.photo`)} type="url" className={f} placeholder="https://…" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={lbl}>Website URL <span className="text-zinc-600">(optional)</span></Label>
+                <Input {...register(`hotels.${i}.website`)} type="url" className={f} placeholder="https://…" />
+              </div>
+            </div>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => hotelsArray.append({ name: '', stars: 3, location: '', photo: '', website: '' })}
+          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
+        >
+          <Plus size={13} className="mr-1.5" /> Add Hotel
+        </Button>
+      </div>
+
+      {/* ── Airlines ── */}
+      <SectionHeader title="Airlines" />
+
+      <div className="space-y-3">
+        {airlinesArray.fields.map((field, i) => (
+          <div key={field.id} className={card}>
+            <button
+              type="button"
+              onClick={() => airlinesArray.remove(i)}
+              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
+            >
+              <X size={14} />
+            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className={lbl}>Airline Name</Label>
+                <Input {...register(`airlines.${i}.name`)} className={f} placeholder="Pakistan International Airlines" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={lbl}>Baggage Allowance</Label>
+                <Input {...register(`airlines.${i}.baggage_allowance`)} className={f} placeholder="23kg checked + 7kg carry-on" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={lbl}>Airline Logo URL <span className="text-zinc-600">(optional)</span></Label>
+              <Input {...register(`airlines.${i}.photo`)} type="url" className={f} placeholder="https://…" />
+            </div>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => airlinesArray.append({ name: '', baggage_allowance: '', photo: '' })}
+          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
+        >
+          <Plus size={13} className="mr-1.5" /> Add Airline
+        </Button>
+      </div>
+
+      {/* ── Excursions ── */}
+      <SectionHeader title="Excursions" />
+
+      <div className="space-y-3">
+        {excursionsArray.fields.map((field, i) => (
+          <div key={field.id} className={card}>
+            <button
+              type="button"
+              onClick={() => excursionsArray.remove(i)}
+              className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 transition-colors"
+            >
+              <X size={14} />
+            </button>
+            <div className="space-y-1.5">
+              <Label className={lbl}>Excursion Name</Label>
+              <Input {...register(`excursions.${i}.name`)} className={f} placeholder="Attabad Lake Boat Ride" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={lbl}>Description</Label>
+              <Textarea {...register(`excursions.${i}.description`)} className={f} rows={2} placeholder="Describe this excursion…" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={lbl}>Photo URL <span className="text-zinc-600">(optional)</span></Label>
+              <Input {...register(`excursions.${i}.photo`)} type="url" className={f} placeholder="https://…" />
+            </div>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => excursionsArray.append({ name: '', description: '', photo: '' })}
+          className="border-dashed border-[#1c1c1c] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer"
+        >
+          <Plus size={13} className="mr-1.5" /> Add Excursion
+        </Button>
+      </div>
+
+      {/* ── Error / Submit ── */}
       {mutation.isError && (
         <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/50 rounded-md px-3 py-2">
           Failed to save trip. Please try again.
         </p>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex gap-3 pt-4 border-t border-[#1c1c1c]">
         <Button
           type="submit"
           disabled={mutation.isPending}

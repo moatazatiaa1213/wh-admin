@@ -1,13 +1,61 @@
+// ─── Nested Trip sub-types ────────────────────────────────────────────────────
+
+export interface City {
+  name: string
+  country: string
+  location: string
+}
+
+export interface Hotel {
+  name: string
+  stars: number         // 1–5
+  location: string
+  photo?: string        // URL
+  website?: string      // URL
+}
+
+export interface Airline {
+  name: string
+  photo?: string        // URL
+  baggage_allowance: string
+}
+
+export interface Excursion {
+  name: string
+  description: string
+  photo?: string        // URL
+}
+
+// ─── Core types ───────────────────────────────────────────────────────────────
+
 export interface Trip {
   id: string
   title: string
+  trip_number: string
   description: string
   destination: string
-  price: number
-  duration: number        // days
+
+  // Dates
+  travel_date: string   // ISO date string, e.g. "2026-07-01"
+  end_date: string      // ISO date string
+  duration_days: number
+  duration_nights: number
+
+  // Pricing
+  price_adult: number
+  price_child: number
+  deposit: number
+  single_rate: number
+
   featured_image?: string
   status: 'draft' | 'published'
   created_at: string
+
+  // Nested data
+  cities: City[]
+  hotels: Hotel[]
+  airlines: Airline[]
+  excursions: Excursion[]
 }
 
 export type TripInput = Omit<Trip, 'id' | 'created_at'>
