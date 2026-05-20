@@ -680,20 +680,20 @@ function whh_shortcode_trips( array $atts ): string {
 
     ob_start();
     echo '<div class="whh-grid">';
-    foreach ( $posts as $post ) {
-        $t       = whh_format_tour( $post );
+    foreach ( $posts as $whh_post ) {
+        $t       = whh_format_tour( $whh_post );
         $done    = ! empty( $t['travel_date'] ) && strtotime( $t['travel_date'] ) < time();
         $cls     = $done ? 'whh-card completed' : 'whh-card';
         $badge   = $done ? '<span class="whh-badge whh-badge-completed">Completed</span>' : '';
         $url     = esc_url( get_permalink( (int) $t['id'] ) );
         $img     = esc_url( $t['featured_image'] );
-        $title   = esc_html( $t['trip_number'] . ' – ' . $t['title'] );
+        $title   = esc_html( $t['trip_number'] . ' - ' . $t['title'] );
         $price   = $t['price_adult'] ? 'From EGP ' . number_format( (float) $t['price_adult'] ) : '';
 
         $date_str = '';
         if ( ! empty( $t['travel_date'] ) ) {
             $s = date_i18n( 'j, M', strtotime( $t['travel_date'] ) );
-            $e = ! empty( $t['end_date'] ) ? ' – ' . date_i18n( 'j, M', strtotime( $t['end_date'] ) ) : '';
+            $e = ! empty( $t['end_date'] ) ? ' - ' . date_i18n( 'j, M', strtotime( $t['end_date'] ) ) : '';
             $date_str = 'Availability : ' . $s . $e;
         }
 
@@ -705,7 +705,7 @@ function whh_shortcode_trips( array $atts ): string {
             </a>
             <div class='whh-card-body'>
                 <h3 class='whh-card-title'>{$title}</h3>
-                " . ( $date_str ? "<p class='whh-card-date'>&#128197; {$date_str}</p>" : '' ) . "
+                " . ( $date_str ? "<p class='whh-card-date'>" . esc_html( $date_str ) . "</p>" : '' ) . "
                 " . ( $price    ? "<p class='whh-card-price'>{$price}</p>"              : '' ) . "
             </div>
         </div>";
