@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -28,8 +29,8 @@ const tripSchema = z.object({
   destination: z.string().min(1, 'Destination is required'),
   travel_date: z.string().min(1, 'Travel date is required'),
   end_date: z.string().min(1, 'End date is required'),
-  duration_days: z.coerce.number().int().positive('Must be a positive integer'),
-  duration_nights: z.coerce.number().int().positive('Must be a positive integer'),
+  duration_days: z.coerce.number().int().nonnegative(),
+  duration_nights: z.coerce.number().int().nonnegative(),
   price_adult: z.coerce.number().positive('Must be greater than 0'),
   price_child: z.coerce.number().nonnegative('Must be 0 or more'),
   deposit: z.coerce.number().nonnegative('Must be 0 or more'),
@@ -99,6 +100,20 @@ export function TripForm({ trip, cities, hotels, airlines, excursions }: TripFor
       excursion_ids: trip?.excursion_ids ?? [],
     },
   })
+
+  // ── Auto-calculate duration when dates change ─────────────────────────────
+  const travelDate = watch('travel_date')
+  const endDate    = watch('end_date')
+
+  useEffect(() => {
+    if (!travelDate || !endDate) return
+    const start = new Date(travelDate)
+    const end   = new Date(endDate)
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return
+    const nights = Math.round((end.getTime() - start.getTime()) / 86_400_000)
+    setValue('duration_nights', nights)
+    setValue('duration_days',   nights + 1)
+  }, [travelDate, endDate, setValue])
 
   const mutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
@@ -188,14 +203,24 @@ export function TripForm({ trip, cities, hotels, airlines, excursions }: TripFor
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={lbl}>Duration (Days)</Label>
-          <Input {...register('duration_days')} type="number" min="1" className={f} placeholder="7" />
-          {errors.duration_days && <p className={err}>{errors.duration_days.message}</p>}
+          <Label className={lbl}>Duration (Days) <span className="text-zinc-600 font-normal">· auto</span></Label>
+          <Input
+            {...register('duration_days')}
+            type="number"
+            readOnly
+            className={`${f} opacity-50 cursor-not-allowed select-none`}
+            placeholder="Auto-calculated"
+          />
         </div>
         <div className="space-y-1.5">
-          <Label className={lbl}>Duration (Nights)</Label>
-          <Input {...register('duration_nights')} type="number" min="1" className={f} placeholder="6" />
-          {errors.duration_nights && <p className={err}>{errors.duration_nights.message}</p>}
+          <Label className={lbl}>Duration (Nights) <span className="text-zinc-600 font-normal">· auto</span></Label>
+          <Input
+            {...register('duration_nights')}
+            type="number"
+            readOnly
+            className={`${f} opacity-50 cursor-not-allowed select-none`}
+            placeholder="Auto-calculated"
+          />
         </div>
       </div>
 
