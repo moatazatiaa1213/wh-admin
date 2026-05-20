@@ -3,6 +3,11 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
 export async function middleware(request: NextRequest) {
+  // Telegram webhook has its own auth (secret header) — bypass JWT check
+  if (request.nextUrl.pathname === '/api/telegram-webhook') {
+    return NextResponse.next()
+  }
+
   const token = request.cookies.get('auth_token')?.value
 
   if (!token) {
