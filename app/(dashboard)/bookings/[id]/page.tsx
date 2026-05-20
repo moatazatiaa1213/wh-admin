@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 
 export default async function BookingDetailPage({ params }: { params: { id: string } }) {
   let booking
@@ -18,7 +19,7 @@ export default async function BookingDetailPage({ params }: { params: { id: stri
     { label: 'Customer', value: booking.customer_name },
     { label: 'Email', value: booking.customer_email },
     { label: 'Trip', value: booking.trip_title },
-    { label: 'Booking Date', value: new Date(booking.booking_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) },
+    { label: 'Booking Date', value: formatDate(booking.booking_date, { year: 'numeric', month: 'long', day: 'numeric' }) },
     { label: 'Amount', value: `$${booking.amount.toLocaleString()}` },
     { label: 'Notes', value: booking.notes ?? '—' },
   ]

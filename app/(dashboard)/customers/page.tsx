@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getCustomers } from '@/lib/wp-client'
 import { Topbar } from '@/components/topbar'
+import { formatDate } from '@/lib/utils'
 
 export default async function CustomersPage() {
   const customers = await getCustomers()
@@ -32,7 +33,7 @@ export default async function CustomersPage() {
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{c.email}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{c.phone ?? '—'}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500 max-w-[180px] truncate">{c.trip_title ?? '—'}</td>
-                  <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">{new Date(c.enquiry_date).toLocaleDateString()}</td>
+                  <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">{formatDate(c.enquiry_date)}</td>
                 </tr>
               ))
             )}

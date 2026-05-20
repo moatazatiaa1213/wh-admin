@@ -3,6 +3,7 @@ import { getBookings } from '@/lib/wp-client'
 import { Topbar } from '@/components/topbar'
 import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
+import { formatDate } from '@/lib/utils'
 
 interface Props {
   searchParams: { status?: string }
@@ -62,7 +63,7 @@ export default async function BookingsPage({ searchParams }: Props) {
                   </td>
                   <td className="px-5 py-3.5 text-sm text-zinc-200">{b.customer_name}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500 max-w-[180px] truncate">{b.trip_title}</td>
-                  <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">{new Date(b.booking_date).toLocaleDateString()}</td>
+                  <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">{formatDate(b.booking_date)}</td>
                   <td className="px-5 py-3.5"><StatusBadge status={b.status} /></td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">${b.amount.toLocaleString()}</td>
                 </tr>
