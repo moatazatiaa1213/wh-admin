@@ -17,6 +17,13 @@ register_activation_hook( __FILE__, function () { flush_rewrite_rules(); } );
 
 add_action( 'rest_api_init', function () {
 
+    // Next available trip number — returns e.g. { "next": "WH-221" }
+    register_rest_route( WHH_NS, '/tours/next-number', [
+        'methods'             => 'GET',
+        'callback'            => 'whh_next_trip_number',
+        'permission_callback' => 'whh_auth',
+    ] );
+
     // Meta inspector — temporary diagnostic endpoint (admin only)
     register_rest_route( WHH_NS, '/tours/meta-inspect', [
         'methods'             => 'GET',
@@ -86,6 +93,32 @@ function whh_auth(): bool {
 /** Read operations are public — tour data is not sensitive */
 function whh_public(): bool {
     return true;
+}
+
+/**
+ * Returns the next available sequential trip number.
+ * Queries wp_postmeta for the highest stored "WH-NNN" value and adds 1.
+ * Ignores post-ID-based fallbacks (which are 4+ digits like WH-7132).
+ */
+function whh_next_trip_number(): WP_REST_Response {
+    global $wpdb;
+
+    // Get the highest explicitly-stored WH-NNN trip number from post meta
+    $max_val = $wpdb->get_var(
+        "SELECT meta_value
+         FROM {$wpdb->postmeta}
+         WHERE meta_key = 'whh-trip-number'
+           AND meta_value REGEXP '^WH-[0-9]+$'
+         ORDER BY CAST(SUBSTRING(meta_value, 4) AS UNSIGNED) DESC
+         LIMIT 1"
+    );
+
+    $next_num = $max_val ? ( (int) substr( $max_val, 3 ) + 1 ) : 1;
+
+    return new WP_REST_Response( [
+        'next' => 'WH-' . str_pad( $next_num, 3, '0', STR_PAD_LEFT ),
+        'prev' => $max_val ?: null,
+    ] );
 }
 
 // ─── Tour Master: format a tour post ─────────────────────────────────────────

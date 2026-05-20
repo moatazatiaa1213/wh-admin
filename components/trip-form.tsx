@@ -52,6 +52,7 @@ interface TripFormProps {
   hotels: Hotel[]
   airlines: Airline[]
   excursions: Excursion[]
+  nextTripNumber?: string   // pre-filled for new trips, e.g. "WH-221"
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
@@ -67,7 +68,7 @@ function SectionHeader({ title }: { title: string }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function TripForm({ trip, cities, hotels, airlines, excursions }: TripFormProps) {
+export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripNumber }: TripFormProps) {
   const router = useRouter()
   const isEditing = !!trip
 
@@ -82,7 +83,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions }: TripFor
     resolver: zodResolver(tripSchema) as any,
     defaultValues: {
       title: trip?.title ?? '',
-      trip_number: trip?.trip_number ?? '',
+      trip_number: trip?.trip_number ?? nextTripNumber ?? '',
       description: trip?.description ?? '',
       destination: trip?.destination ?? '',
       travel_date: trip?.travel_date ?? '',

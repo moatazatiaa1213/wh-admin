@@ -99,6 +99,22 @@ export async function getTrip(id: string): Promise<Trip> {
   return res.json()
 }
 
+/**
+ * Returns the next available sequential trip number from WordPress, e.g. "WH-221".
+ * Falls back to "WH-001" if the endpoint is unreachable or no trips exist yet.
+ */
+export async function getNextTripNumber(): Promise<string> {
+  if (USE_MOCK) return 'WH-001'
+  try {
+    const res = await wpFetch('/tours/next-number')
+    if (!res.ok) return 'WH-001'
+    const data = await res.json() as { next: string }
+    return data.next
+  } catch {
+    return 'WH-001'
+  }
+}
+
 export async function createTrip(data: TripInput): Promise<Trip> {
   if (USE_MOCK) {
     const trip: Trip = { ...data, id: `trip-${Date.now()}`, created_at: new Date().toISOString() }
