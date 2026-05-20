@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
@@ -10,6 +10,9 @@ interface Props {
 
 export function StatusToggle({ tripId, current }: Props) {
   const [value, setValue] = useState(current)
+
+  // Sync with prop changes (e.g. after a bulk action + router.refresh())
+  useEffect(() => { setValue(current) }, [current])
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
