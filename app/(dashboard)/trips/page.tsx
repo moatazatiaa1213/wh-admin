@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { getTrips } from '@/lib/wp-client'
 import { Topbar } from '@/components/topbar'
-import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
 import { DeleteTripButton } from './delete-trip-button'
 import { AvailabilityToggle } from './availability-toggle'
+import { StatusToggle } from './status-toggle'
 import { Plus, Pencil } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -93,7 +93,12 @@ export default async function TripsPage({ searchParams }: Props) {
                   </td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">{trip.price_adult ? `$${Number(trip.price_adult).toLocaleString()}` : '—'}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.duration_days}D / {trip.duration_nights}N</td>
-                  <td className="px-5 py-3.5"><StatusBadge status={trip.status} /></td>
+                  <td className="px-5 py-3.5">
+                    <StatusToggle
+                      tripId={trip.id}
+                      current={trip.status as 'published' | 'draft'}
+                    />
+                  </td>
                   <td className="px-5 py-3.5">
                     <AvailabilityToggle
                       tripId={trip.id}
