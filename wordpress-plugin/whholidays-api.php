@@ -520,3 +520,366 @@ function whh_get_excursions_item( $r ):        WP_REST_Response { return whh_lib
 function whh_create_excursions( $r ):          WP_REST_Response { return whh_lib_resp_create( 'excursions', $r ); }
 function whh_update_excursions_item( $r ):     WP_REST_Response { return whh_lib_resp_update( 'excursions', $r ); }
 function whh_delete_excursions_item( $r ):     WP_REST_Response { return whh_lib_resp_delete( 'excursions', $r ); }
+
+// ─── DISPLAY LAYER ────────────────────────────────────────────────────────────
+// Shortcodes + single tour template override.
+// No FTP needed — everything is injected via hooks.
+
+add_action( 'wp_head',      'whh_print_styles' );
+add_shortcode( 'whh_trips', 'whh_shortcode_trips' );
+add_filter( 'the_content',  'whh_filter_tour_content' );
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+function whh_print_styles(): void {
+    if ( ! is_singular( 'tour' ) && ! is_page() ) return;
+    ?>
+    <style id="whh-styles">
+    /* ── Grid ── */
+    .whh-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        margin: 32px 0;
+    }
+    @media (max-width: 1024px) { .whh-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 600px)  { .whh-grid { grid-template-columns: 1fr; } }
+
+    .whh-card {
+        background: #fff;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,.07);
+        transition: transform .2s, box-shadow .2s;
+        text-decoration: none;
+        color: inherit;
+    }
+    .whh-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.13); }
+
+    .whh-card-img-wrap {
+        display: block;
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 4/3;
+    }
+    .whh-card-img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        transition: transform .35s;
+    }
+    .whh-card:hover .whh-card-img { transform: scale(1.06); }
+    .whh-card.completed .whh-card-img { filter: grayscale(100%); }
+
+    .whh-badge {
+        position: absolute; top: 10px; left: 10px;
+        padding: 3px 10px;
+        font-size: 10px; font-weight: 800;
+        letter-spacing: 1.2px; text-transform: uppercase;
+        border-radius: 2px;
+    }
+    .whh-badge-completed { background: #e74c3c; color: #fff; }
+
+    .whh-card-body { padding: 14px 16px 18px; }
+
+    .whh-card-title {
+        font-size: 12px; font-weight: 800;
+        text-transform: uppercase; letter-spacing: .5px;
+        color: #1a1a1a; margin: 0 0 8px; line-height: 1.4;
+    }
+    .whh-card-date {
+        font-size: 12px; color: #c9a227;
+        margin: 0 0 5px; display: flex; align-items: center; gap: 5px;
+    }
+    .whh-card-price { font-size: 13px; font-weight: 600; color: #555; margin: 0; }
+
+    /* ── Detail ── */
+    .whh-detail { font-family: inherit; }
+    .whh-detail-layout {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 48px; margin-top: 28px;
+    }
+    @media (max-width: 900px) { .whh-detail-layout { grid-template-columns: 1fr; } }
+
+    .whh-section { margin-bottom: 32px; }
+    .whh-section h2 {
+        font-size: 17px; font-weight: 800;
+        color: #1a1a1a; margin-bottom: 14px;
+        padding-bottom: 8px; border-bottom: 2px solid #f0f0f0;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .whh-row {
+        display: flex; justify-content: space-between;
+        padding: 10px 0; border-bottom: 1px solid #f4f4f4;
+        font-size: 14px;
+    }
+    .whh-row strong { color: #1a1a1a; }
+    .whh-row span   { color: #666; }
+    .whh-lib-item {
+        background: #f8f8f8; border-radius: 4px;
+        padding: 11px 16px; margin-bottom: 8px;
+        font-size: 14px; color: #333; line-height: 1.5;
+    }
+    .whh-lib-sub { color: #888; font-size: 12px; display: block; margin-top: 3px; }
+
+    /* Sidebar */
+    .whh-sidebar-box {
+        background: #fff; border: 1px solid #e8e8e8;
+        border-radius: 6px; padding: 24px; margin-bottom: 20px;
+    }
+    .whh-sidebar-date {
+        font-size: 18px; font-weight: 700;
+        color: #1a1a1a; text-align: center; margin-bottom: 18px;
+    }
+    .whh-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .whh-price-box {
+        border: 1px solid #e8e8e8; border-radius: 6px;
+        padding: 16px; text-align: center;
+    }
+    .whh-price-box .lbl   { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .whh-price-box .cur   { font-size: 13px; font-weight: 700; color: #2563eb; }
+    .whh-price-box .amt   { font-size: 26px; font-weight: 900; color: #2563eb; line-height: 1.1; }
+
+    .whh-contact-btn {
+        display: block; width: 100%; padding: 14px;
+        text-align: center; background: #c9a227; color: #fff !important;
+        font-weight: 700; font-size: 13px; letter-spacing: 1px;
+        text-transform: uppercase; border-radius: 4px;
+        text-decoration: none; transition: background .2s;
+    }
+    .whh-contact-btn:hover { background: #a8861f; }
+
+    .whh-why-box { background: #f8f8f8; border-radius: 6px; padding: 20px; }
+    .whh-why-box h4 { font-size: 14px; font-weight: 700; margin: 0 0 12px; }
+    .whh-why-box ul { list-style: none; padding: 0; margin: 0; }
+    .whh-why-box li {
+        font-size: 13px; color: #555;
+        padding: 7px 0; border-bottom: 1px solid #e8e8e8;
+    }
+    .whh-why-box li::before { content: "$ "; color: #c9a227; font-weight: 800; }
+    </style>
+    <?php
+}
+
+// ─── [whh_trips] Shortcode ────────────────────────────────────────────────────
+
+function whh_shortcode_trips( array $atts ): string {
+    $atts = shortcode_atts( [ 'limit' => 40 ], $atts );
+
+    $posts = get_posts( [
+        'post_type'      => 'tour',
+        'posts_per_page' => (int) $atts['limit'],
+        'post_status'    => 'publish',
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ] );
+
+    if ( empty( $posts ) ) {
+        return '<p style="text-align:center;color:#888;padding:48px 0;">No trips available at the moment.</p>';
+    }
+
+    ob_start();
+    echo '<div class="whh-grid">';
+    foreach ( $posts as $post ) {
+        $t       = whh_format_tour( $post );
+        $done    = ! empty( $t['travel_date'] ) && strtotime( $t['travel_date'] ) < time();
+        $cls     = $done ? 'whh-card completed' : 'whh-card';
+        $badge   = $done ? '<span class="whh-badge whh-badge-completed">Completed</span>' : '';
+        $url     = esc_url( get_permalink( (int) $t['id'] ) );
+        $img     = esc_url( $t['featured_image'] );
+        $title   = esc_html( $t['trip_number'] . ' – ' . $t['title'] );
+        $price   = $t['price_adult'] ? 'From EGP ' . number_format( (float) $t['price_adult'] ) : '';
+
+        $date_str = '';
+        if ( ! empty( $t['travel_date'] ) ) {
+            $s = date_i18n( 'j, M', strtotime( $t['travel_date'] ) );
+            $e = ! empty( $t['end_date'] ) ? ' – ' . date_i18n( 'j, M', strtotime( $t['end_date'] ) ) : '';
+            $date_str = 'Availability : ' . $s . $e;
+        }
+
+        echo "
+        <div class='{$cls}'>
+            <a href='{$url}' class='whh-card-img-wrap'>
+                " . ( $img ? "<img src='{$img}' alt='" . esc_attr( $t['title'] ) . "' class='whh-card-img' loading='lazy'>" : '<div style="width:100%;height:100%;background:#eee;"></div>' ) . "
+                {$badge}
+            </a>
+            <div class='whh-card-body'>
+                <h3 class='whh-card-title'>{$title}</h3>
+                " . ( $date_str ? "<p class='whh-card-date'>&#128197; {$date_str}</p>" : '' ) . "
+                " . ( $price    ? "<p class='whh-card-price'>{$price}</p>"              : '' ) . "
+            </div>
+        </div>";
+    }
+    echo '</div>';
+    return ob_get_clean();
+}
+
+// ─── Single Tour Detail ───────────────────────────────────────────────────────
+
+function whh_filter_tour_content( string $content ): string {
+    if ( ! is_singular( 'tour' ) || ! in_the_loop() || ! is_main_query() ) return $content;
+    global $post;
+    return whh_render_detail( whh_format_tour( $post ) );
+}
+
+function whh_render_detail( array $t ): string {
+    // Resolve library items from stored IDs
+    $hotels     = array_values( array_filter( array_map( fn($id) => whh_lib_get_item('hotels',     $id), $t['hotel_ids']     ) ) );
+    $airlines   = array_values( array_filter( array_map( fn($id) => whh_lib_get_item('airlines',   $id), $t['airline_ids']   ) ) );
+    $cities     = array_values( array_filter( array_map( fn($id) => whh_lib_get_item('cities',     $id), $t['city_ids']      ) ) );
+    $excursions = array_values( array_filter( array_map( fn($id) => whh_lib_get_item('excursions', $id), $t['excursion_ids'] ) ) );
+
+    // Packages linked to this trip
+    $packages = array_values( array_filter(
+        whh_lib_all('packages'),
+        fn($p) => (string)($p['trip_id'] ?? '') === $t['id']
+    ));
+
+    // Sidebar date
+    $date_label = '';
+    if ( ! empty( $t['travel_date'] ) ) {
+        $s = date_i18n( 'F j, Y', strtotime( $t['travel_date'] ) );
+        $e = ! empty( $t['end_date'] ) ? ' – ' . date_i18n( 'F j, Y', strtotime( $t['end_date'] ) ) : '';
+        $date_label = $s . $e;
+    }
+
+    $adult = $t['price_adult'] ? number_format( (float)$t['price_adult'] ) : '—';
+    $child = $t['price_child'] ? number_format( (float)$t['price_child'] ) : '—';
+    $dur   = $t['duration_days'] ? $t['duration_days'] . 'D / ' . $t['duration_nights'] . 'N' : '';
+
+    // Try to find a contact page, fallback to mailto
+    $contact_page = get_page_by_path('contact');
+    $contact_url  = $contact_page ? esc_url( get_permalink( $contact_page->ID ) ) : 'mailto:info@whholidays.com';
+
+    ob_start(); ?>
+    <div class="whh-detail">
+        <div class="whh-detail-layout">
+
+            <!-- ── Main ── -->
+            <div>
+
+                <?php if ( $t['description'] ): ?>
+                <div class="whh-section">
+                    <p style="color:#555;line-height:1.8;"><?php echo esc_html( $t['description'] ); ?></p>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( $dur || $t['destination'] ): ?>
+                <div class="whh-section">
+                    <h2>📋 Trip Info</h2>
+                    <?php if ( $t['destination'] ): ?>
+                    <div class="whh-row"><strong>Destination</strong><span><?php echo esc_html( $t['destination'] ); ?></span></div>
+                    <?php endif; ?>
+                    <?php if ( $dur ): ?>
+                    <div class="whh-row"><strong>Duration</strong><span><?php echo esc_html( $dur ); ?></span></div>
+                    <?php endif; ?>
+                    <?php if ( $t['travel_date'] ): ?>
+                    <div class="whh-row"><strong>Travel Date</strong><span><?php echo esc_html( $date_label ); ?></span></div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $cities ) ): ?>
+                <div class="whh-section">
+                    <h2>🌍 Destinations</h2>
+                    <?php foreach ( $cities as $i => $c ): ?>
+                    <div class="whh-row">
+                        <strong>Destination <?php echo $i + 1; ?></strong>
+                        <span><?php echo esc_html( $c['name'] . ', ' . $c['country'] ); ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $hotels ) ): ?>
+                <div class="whh-section">
+                    <h2>🏨 Hotels</h2>
+                    <?php foreach ( $hotels as $i => $h ): ?>
+                    <div class="whh-lib-item">
+                        <strong>Hotel <?php echo $i + 1; ?> &nbsp; <?php echo esc_html( $h['name'] ); ?></strong>
+                        <?php if ( ! empty( $h['stars'] ) ): ?><span class="whh-lib-sub"><?php echo str_repeat('★', (int)$h['stars']); ?> Stars</span><?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $airlines ) ): ?>
+                <div class="whh-section">
+                    <h2>✈️ Airlines</h2>
+                    <?php foreach ( $airlines as $a ): ?>
+                    <div class="whh-lib-item">
+                        <strong><?php echo esc_html( $a['name'] ); ?></strong>
+                        <?php if ( ! empty( $a['baggage_allowance'] ) ): ?><span class="whh-lib-sub">Baggage allowance: <?php echo esc_html( $a['baggage_allowance'] ); ?></span><?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $excursions ) ): ?>
+                <div class="whh-section">
+                    <h2>🎯 Excursions</h2>
+                    <?php foreach ( $excursions as $ex ): ?>
+                    <div class="whh-lib-item">
+                        <strong><?php echo esc_html( $ex['name'] ); ?></strong>
+                        <?php if ( ! empty( $ex['description'] ) ): ?><span class="whh-lib-sub"><?php echo esc_html( $ex['description'] ); ?></span><?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $packages ) ): ?>
+                <div class="whh-section">
+                    <h2>📦 Available Packages</h2>
+                    <?php foreach ( $packages as $pk ): ?>
+                    <div class="whh-lib-item">
+                        <strong><?php echo esc_html( $pk['name'] ); ?></strong> &mdash; EGP <?php echo number_format( (float)$pk['price'] ); ?>
+                        <?php if ( ! empty( $pk['inclusions'] ) ): ?><span class="whh-lib-sub"><?php echo esc_html( $pk['inclusions'] ); ?></span><?php endif; ?>
+                        <?php if ( ! empty( $pk['max_people'] ) ): ?><span class="whh-lib-sub">Max <?php echo (int)$pk['max_people']; ?> people</span><?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+            </div>
+
+            <!-- ── Sidebar ── -->
+            <div>
+                <div class="whh-sidebar-box">
+                    <?php if ( $date_label ): ?>
+                    <div class="whh-sidebar-date"><?php echo esc_html( $date_label ); ?></div>
+                    <?php endif; ?>
+
+                    <div class="whh-price-grid">
+                        <div class="whh-price-box">
+                            <div class="lbl">Adult Price</div>
+                            <div class="cur">EGP</div>
+                            <div class="amt"><?php echo $adult; ?></div>
+                        </div>
+                        <div class="whh-price-box">
+                            <div class="lbl">Child Price</div>
+                            <div class="cur">EGP</div>
+                            <div class="amt"><?php echo $child; ?></div>
+                        </div>
+                    </div>
+
+                    <a href="<?php echo $contact_url; ?>" class="whh-contact-btn">
+                        Contact Us to Book
+                    </a>
+                </div>
+
+                <div class="whh-why-box">
+                    <h4>Why Book With Us?</h4>
+                    <ul>
+                        <li>No-hassle best price guarantee</li>
+                        <li>Customer care available 24/7</li>
+                        <li>Hand-picked trips &amp; hotels</li>
+                        <li>Personalised service, free of charge</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
