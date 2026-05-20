@@ -14,6 +14,9 @@ export interface ParsedTrip {
   travel_date:     string | null   // yyyy-MM-dd — null if not mentioned
   end_date:        string | null   // yyyy-MM-dd — null if not mentioned
   duration_nights: number | null
+  // Not from Gemini — stored alongside parsed data in Redis so the
+  // confirm flow can re-download and upload the photo as featured image
+  tg_file_id?:     string
 }
 
 /**

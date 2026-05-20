@@ -5,7 +5,7 @@ import { sendMessage, downloadTelegramFile }                      from '@/lib/te
 import { parseTripFromText, parseTripFromImage,
          parseTripFromAudio, ParsedTrip }                         from '@/lib/gemini-trip-parser'
 import { cacheGet, cacheSet, cacheInvalidate }                    from '@/lib/cache'
-import { createTrip }                                             from '@/lib/wp-client'
+import { createTrip, uploadTripImage }                            from '@/lib/wp-client'
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 const ALLOWED_USER_ID = parseInt(process.env.TELEGRAM_ALLOWED_USER_ID ?? '0', 10)
@@ -86,25 +86,38 @@ export async function POST(req: NextRequest) {
       await sendMessage(chatId, '⏳ Creating trip in dashboard...')
       try {
         const nights = pending.duration_nights ?? 0
+
+        // Upload photo to WordPress media library if one was sent with the trip
+        let featuredImageId: number | undefined
+        if (pending.tg_file_id) {
+          try {
+            const imgBuffer = await downloadTelegramFile(pending.tg_file_id)
+            featuredImageId = await uploadTripImage(imgBuffer, 'image/jpeg', `trip-${Date.now()}.jpg`)
+          } catch (imgErr) {
+            console.warn('[telegram-webhook] image upload failed, continuing without it:', imgErr)
+          }
+        }
+
         const trip = await createTrip({
-          title:           pending.title,
-          trip_number:     '',
-          description:     '',
-          destination:     pending.destination,
-          travel_date:     pending.travel_date  ?? '',
-          end_date:        pending.end_date      ?? '',
-          duration_nights: nights,
-          duration_days:   nights + 1,
-          price_adult:     pending.price_adult  ?? 0,
-          price_child:     pending.price_child  ?? 0,
-          deposit:         0,
-          single_rate:     0,
-          status:          'draft',
-          availability:    'available',
-          city_ids:        [],
-          hotel_ids:       [],
-          airline_ids:     [],
-          excursion_ids:   [],
+          title:              pending.title,
+          trip_number:        '',
+          description:        '',
+          destination:        pending.destination,
+          travel_date:        pending.travel_date  ?? '',
+          end_date:           pending.end_date      ?? '',
+          duration_nights:    nights,
+          duration_days:      nights + 1,
+          price_adult:        pending.price_adult  ?? 0,
+          price_child:        pending.price_child  ?? 0,
+          deposit:            0,
+          single_rate:        0,
+          status:             'draft',
+          availability:       'available',
+          city_ids:           [],
+          hotel_ids:          [],
+          airline_ids:        [],
+          excursion_ids:      [],
+          ...(featuredImageId ? { featured_image_id: featuredImageId } : {}),
         })
         await cacheInvalidate(pendingKey)
         await sendMessage(chatId,
@@ -139,10 +152,13 @@ export async function POST(req: NextRequest) {
     } else if (photo && photo.length > 0) {
       // ── Photo (+ optional caption) → Gemini Vision ──
       await sendMessage(chatId, '🖼️ Reading your image...')
-      const best   = photo[photo.length - 1] as Record<string, unknown>
-      const buffer = await downloadTelegramFile(best.file_id as string)
+      const best    = photo[photo.length - 1] as Record<string, unknown>
+      const fileId  = best.file_id as string
+      const buffer  = await downloadTelegramFile(fileId)
       // Pass caption alongside the image so Gemini sees both
       parsed = await parseTripFromImage(buffer, 'image/jpeg', caption)
+      // Store the file_id so confirm flow can re-download & upload as featured image
+      parsed.tg_file_id = fileId
 
     } else if (text ?? caption) {
       // ── Slash commands (text only) ──

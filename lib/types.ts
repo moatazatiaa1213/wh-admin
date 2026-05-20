@@ -63,7 +63,9 @@ export interface Trip {
   excursion_ids: string[]
 }
 
-export type TripInput = Omit<Trip, 'id' | 'created_at'>
+export type TripInput = Omit<Trip, 'id' | 'created_at'> & {
+  featured_image_id?: number   // WordPress attachment ID — set as post thumbnail
+}
 export type CityInput = Omit<City, 'id'>
 export type HotelInput = Omit<Hotel, 'id'>
 export type AirlineInput = Omit<Airline, 'id'>

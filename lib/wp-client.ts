@@ -20,16 +20,48 @@ const USE_MOCK = process.env.USE_MOCK_DATA === 'true'
 
 // ─── WP fetch helpers ───────────────────────────────────────────────────────
 
-function wpFetch(path: string, init?: RequestInit) {
-  const base = process.env.WP_BASE_URL
+function wpCredentials() {
   const user = process.env.WP_USERNAME
   const pass = process.env.WP_APP_PASSWORD
-  const credentials = Buffer.from(`${user}:${pass}`).toString('base64')
+  return Buffer.from(`${user}:${pass}`).toString('base64')
+}
+
+/**
+ * Upload a raw image buffer to the WordPress media library.
+ * Returns the new attachment ID, which can be passed as featured_image_id
+ * to createTrip / updateTrip.
+ */
+export async function uploadTripImage(
+  imageBuffer: Buffer,
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp',
+  filename: string,
+): Promise<number> {
+  const base = process.env.WP_BASE_URL
+  const res = await fetch(`${base}/wp-json/wp/v2/media`, {
+    method: 'POST',
+    headers: {
+      Authorization:       `Basic ${wpCredentials()}`,
+      'Content-Type':      mimeType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    },
+    body: imageBuffer as unknown as BodyInit,
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`WP media upload failed (${res.status}): ${err}`)
+  }
+  const data = await res.json() as { id: number }
+  return data.id
+}
+
+function wpFetch(path: string, init?: RequestInit) {
+  const base = process.env.WP_BASE_URL
 
   return fetch(`${base}/wp-json/whholidays/v1${path}`, {
     ...init,
     headers: {
-      Authorization: `Basic ${credentials}`,
+      Authorization: `Basic ${wpCredentials()}`,
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
     },

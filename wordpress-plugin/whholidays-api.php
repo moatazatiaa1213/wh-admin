@@ -303,8 +303,9 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
     }
 
     // WHH dashboard-specific fields
-    if ( isset( $data['trip_number'] ) )   update_post_meta( $post_id, 'whh-trip-number',   sanitize_text_field( $data['trip_number'] ) );
-    if ( isset( $data['availability'] ) )  update_post_meta( $post_id, 'whh-availability',  sanitize_text_field( $data['availability'] ) );
+    if ( isset( $data['trip_number'] ) )      update_post_meta( $post_id, 'whh-trip-number',   sanitize_text_field( $data['trip_number'] ) );
+    if ( isset( $data['availability'] ) )     update_post_meta( $post_id, 'whh-availability',  sanitize_text_field( $data['availability'] ) );
+    if ( ! empty( $data['featured_image_id'] ) ) set_post_thumbnail( $post_id, (int) $data['featured_image_id'] );
     if ( isset( $data['city_ids'] ) )      update_post_meta( $post_id, 'whh-city-ids',      wp_json_encode( $data['city_ids'] ) );
     if ( isset( $data['hotel_ids'] ) )     update_post_meta( $post_id, 'whh-hotel-ids',     wp_json_encode( $data['hotel_ids'] ) );
     if ( isset( $data['airline_ids'] ) )   update_post_meta( $post_id, 'whh-airline-ids',   wp_json_encode( $data['airline_ids'] ) );
