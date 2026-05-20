@@ -674,6 +674,19 @@ function whh_print_styles(): void {
     }
     .whh-card-cta::after { content: " →"; }
 
+    /* ── Detail heading ── */
+    .whh-detail-heading { margin-bottom: 24px; }
+    .whh-detail-number {
+        display: inline-block;
+        font-size: 12px; font-weight: 800;
+        color: #c9a227; letter-spacing: 1.4px;
+        text-transform: uppercase; margin-bottom: 6px;
+    }
+    .whh-detail-title {
+        font-size: 28px; font-weight: 800;
+        color: #1a1a1a; margin: 0; line-height: 1.3;
+    }
+
     /* ── Detail ── */
     .whh-detail { font-family: inherit; }
     .whh-detail-layout {
@@ -755,10 +768,11 @@ function whh_print_styles(): void {
  * Also strips trailing " SOLD" / " COMPLETED" suffixes.
  */
 function whh_clean_title( string $raw ): string {
-    // Remove "WH-XXXX – XX –" or "WH-XXXX - XX -" prefix (em-dash or hyphen)
-    $cleaned = preg_replace( '/^WH-\d+\s*[–\-]+\s*\d+\s*[–\-]+\s*/u', '', $raw );
-    // Remove trailing sale/status words
-    $cleaned = preg_replace( '/\s+(SOLD|COMPLETED|SOLDOUT|SOLD\s*OUT)$/iu', '', $cleaned );
+    // Strip Tour Master prefix: "WH-7132 – 59 –" (any dash/special char between numbers)
+    // [^\w\s]+ matches en-dash, em-dash, hyphen, or any non-word non-space char
+    $cleaned = preg_replace( '/^WH-\d+\s*[^\w\s]+\s*\d+\s*[^\w\s]+\s*/u', '', $raw );
+    // Remove trailing status words (case-insensitive)
+    $cleaned = preg_replace( '/\s+(SOLD\s*OUT|SOLD|COMPLETED|SOLDOUT)$/iu', '', $cleaned );
     // Title-case (handles multibyte/Arabic chars safely)
     return mb_convert_case( trim( $cleaned ), MB_CASE_TITLE, 'UTF-8' );
 }
@@ -869,6 +883,13 @@ function whh_render_detail( array $t ): string {
 
     ob_start(); ?>
     <div class="whh-detail">
+
+        <!-- ── Trip heading (number + clean title) ── -->
+        <div class="whh-detail-heading">
+            <span class="whh-detail-number"><?php echo esc_html( $t['trip_number'] ); ?></span>
+            <h1 class="whh-detail-title"><?php echo esc_html( whh_clean_title( $t['title'] ) ); ?></h1>
+        </div>
+
         <div class="whh-detail-layout">
 
             <!-- ── Main ── -->
