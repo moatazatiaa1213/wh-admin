@@ -17,6 +17,13 @@ register_activation_hook( __FILE__, function () { flush_rewrite_rules(); } );
 
 add_action( 'rest_api_init', function () {
 
+    // Meta inspector — temporary diagnostic endpoint (admin only)
+    register_rest_route( WHH_NS, '/tours/meta-inspect', [
+        'methods'             => 'GET',
+        'callback'            => 'whh_meta_inspect',
+        'permission_callback' => 'whh_auth',
+    ] );
+
     // Tours (Tour Master post type)
     register_rest_route( WHH_NS, '/tours', [
         [ 'methods' => 'GET',  'callback' => 'whh_get_tours',   'permission_callback' => 'whh_public' ],
@@ -520,6 +527,42 @@ function whh_get_excursions_item( $r ):        WP_REST_Response { return whh_lib
 function whh_create_excursions( $r ):          WP_REST_Response { return whh_lib_resp_create( 'excursions', $r ); }
 function whh_update_excursions_item( $r ):     WP_REST_Response { return whh_lib_resp_update( 'excursions', $r ); }
 function whh_delete_excursions_item( $r ):     WP_REST_Response { return whh_lib_resp_delete( 'excursions', $r ); }
+
+// ─── Meta Inspector ───────────────────────────────────────────────────────────
+// Temporary diagnostic: returns all tourmaster-* meta for first 5 tours.
+// Remove this endpoint once migration is complete.
+
+function whh_meta_inspect(): WP_REST_Response {
+    $posts = get_posts( [
+        'post_type'      => 'tour',
+        'posts_per_page' => 5,
+        'post_status'    => [ 'publish', 'draft' ],
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ] );
+
+    $result = [];
+    foreach ( $posts as $p ) {
+        $all_meta = get_post_meta( $p->ID );
+        // Filter to only tourmaster-* and whh-* keys
+        $filtered = [];
+        foreach ( $all_meta as $key => $values ) {
+            if ( str_starts_with( $key, 'tourmaster-' ) || str_starts_with( $key, 'whh-' ) ) {
+                $val = $values[0] ?? '';
+                // Try to unserialize
+                $unserialized = @maybe_unserialize( $val );
+                $filtered[ $key ] = $unserialized !== $val ? $unserialized : $val;
+            }
+        }
+        $result[] = [
+            'id'    => $p->ID,
+            'title' => $p->post_title,
+            'meta'  => $filtered,
+        ];
+    }
+
+    return new WP_REST_Response( $result, 200 );
+}
 
 // ─── DISPLAY LAYER ────────────────────────────────────────────────────────────
 // Shortcodes + single tour template override.
