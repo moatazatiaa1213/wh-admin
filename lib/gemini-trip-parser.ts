@@ -16,6 +16,16 @@ export interface ParsedTrip {
   duration_nights: number | null
 }
 
+/**
+ * Strip markdown code fences that Gemini sometimes adds despite being told not to.
+ * e.g. ```json\n{...}\n``` → {...}
+ */
+function extractJson(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (fenced) return fenced[1].trim()
+  return raw.trim()
+}
+
 /** System prompt injected into every Gemini call */
 function buildSystemPrompt(): string {
   const today = new Date().toISOString().split('T')[0]
@@ -53,7 +63,7 @@ export async function parseTripFromText(text: string): Promise<ParsedTrip> {
     buildSystemPrompt(),
     `User message: ${text}`,
   ])
-  return JSON.parse(result.response.text()) as ParsedTrip
+  return JSON.parse(extractJson(result.response.text())) as ParsedTrip
 }
 
 /**
@@ -75,7 +85,7 @@ export async function parseTripFromImage(
     },
     'Read all text visible in this image and extract the trip details as JSON.',
   ])
-  return JSON.parse(result.response.text()) as ParsedTrip
+  return JSON.parse(extractJson(result.response.text())) as ParsedTrip
 }
 
 /**
@@ -97,5 +107,5 @@ export async function parseTripFromAudio(
     },
     'Transcribe this audio and extract the trip details as JSON.',
   ])
-  return JSON.parse(result.response.text()) as ParsedTrip
+  return JSON.parse(extractJson(result.response.text())) as ParsedTrip
 }
