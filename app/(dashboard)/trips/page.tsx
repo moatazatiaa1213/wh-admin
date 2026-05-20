@@ -88,7 +88,7 @@ export default async function TripsPage({ searchParams }: Props) {
                   </td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.destination}</td>
                   <td className="px-5 py-3.5 text-xs text-zinc-500 font-mono">
-                    {fmtDate(trip.travel_date)}
+                    {formatDate(trip.travel_date)}
                   </td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">{trip.price_adult ? `$${Number(trip.price_adult).toLocaleString()}` : '—'}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.duration_days}D / {trip.duration_nights}N</td>
