@@ -13,6 +13,7 @@ import {
   Building2,
   PlaneTakeoff,
   Compass,
+  ArrowRightLeft,
 } from 'lucide-react'
 
 const mainNav = [
@@ -72,6 +73,21 @@ export function Sidebar() {
             {label}
           </Link>
         ))}
+
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 px-2 pt-4 pb-2">
+          Tools
+        </p>
+        <Link
+          href="/migration"
+          className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 cursor-pointer ${
+            isActive('/migration')
+              ? 'bg-zinc-900 text-zinc-50'
+              : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+          }`}
+        >
+          <ArrowRightLeft size={15} className={isActive('/migration') ? 'text-sky-500' : 'text-zinc-600'} />
+          Migration
+        </Link>
 
         <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 px-2 pt-4 pb-2">
           Library
