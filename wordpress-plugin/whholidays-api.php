@@ -588,19 +588,21 @@ function whh_print_styles(): void {
     @media (max-width: 1024px) { .whh-grid { grid-template-columns: repeat(2,1fr); } }
     @media (max-width: 600px)  { .whh-grid { grid-template-columns: 1fr; } }
 
+    /* ── Card ── */
     .whh-card {
         background: #fff;
-        border-radius: 4px;
+        border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0,0,0,.07);
-        transition: transform .2s, box-shadow .2s;
-        text-decoration: none;
+        box-shadow: 0 2px 14px rgba(0,0,0,.08);
+        transition: transform .22s ease, box-shadow .22s ease;
+        text-decoration: none !important;
         color: inherit;
+        display: flex;
+        flex-direction: column;
     }
-    .whh-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,.13); }
+    .whh-card:hover { transform: translateY(-6px); box-shadow: 0 14px 36px rgba(0,0,0,.14); }
 
     .whh-card-img-wrap {
-        display: block;
         position: relative;
         overflow: hidden;
         aspect-ratio: 4/3;
@@ -608,32 +610,64 @@ function whh_print_styles(): void {
     .whh-card-img {
         width: 100%; height: 100%;
         object-fit: cover;
-        transition: transform .35s;
+        transition: transform .4s ease;
+        display: block;
     }
-    .whh-card:hover .whh-card-img { transform: scale(1.06); }
-    .whh-card.completed .whh-card-img { filter: grayscale(100%); }
+    .whh-card:hover .whh-card-img { transform: scale(1.07); }
+    .whh-card.completed .whh-card-img { filter: grayscale(80%); }
 
-    .whh-badge {
-        position: absolute; top: 10px; left: 10px;
-        padding: 3px 10px;
+    /* Image placeholder when no photo set */
+    .whh-card-img-placeholder {
+        width: 100%; height: 100%;
+        background: linear-gradient(135deg, #e8e8e8 0%, #d4d4d4 100%);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 40px; color: #bbb;
+    }
+
+    /* Completed badge — top-left of image */
+    .whh-badge-completed {
+        position: absolute; top: 12px; left: 12px;
+        background: rgba(231,76,60,.9); color: #fff;
+        padding: 4px 10px;
         font-size: 10px; font-weight: 800;
         letter-spacing: 1.2px; text-transform: uppercase;
-        border-radius: 2px;
+        border-radius: 4px;
     }
-    .whh-badge-completed { background: #e74c3c; color: #fff; }
 
-    .whh-card-body { padding: 14px 16px 18px; }
+    /* Nights badge — bottom-right of image */
+    .whh-nights-badge {
+        position: absolute; bottom: 12px; right: 12px;
+        background: rgba(10,10,10,.70);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        color: #fff;
+        padding: 5px 12px;
+        font-size: 11px; font-weight: 800;
+        letter-spacing: 1px; text-transform: uppercase;
+        border-radius: 5px;
+    }
 
+    /* Card body */
+    .whh-card-body {
+        padding: 16px 18px 20px;
+        display: flex; flex-direction: column; flex: 1;
+    }
     .whh-card-title {
-        font-size: 12px; font-weight: 800;
-        text-transform: uppercase; letter-spacing: .5px;
-        color: #1a1a1a; margin: 0 0 8px; line-height: 1.4;
+        font-size: 15px; font-weight: 700;
+        color: #1a1a1a; margin: 0 0 8px; line-height: 1.45;
     }
     .whh-card-date {
-        font-size: 12px; color: #c9a227;
-        margin: 0 0 5px; display: flex; align-items: center; gap: 5px;
+        font-size: 12px; color: #888;
+        margin: 0 0 14px;
+        display: flex; align-items: center; gap: 5px;
     }
-    .whh-card-price { font-size: 13px; font-weight: 600; color: #555; margin: 0; }
+    .whh-card-cta {
+        margin-top: auto;
+        font-size: 12px; font-weight: 700;
+        color: #c9a227; letter-spacing: .4px;
+        text-transform: uppercase;
+    }
+    .whh-card-cta::after { content: " →"; }
 
     /* ── Detail ── */
     .whh-detail { font-family: inherit; }
@@ -704,6 +738,26 @@ function whh_print_styles(): void {
     <?php
 }
 
+// ─── Title cleaner ────────────────────────────────────────────────────────────
+
+/**
+ * Strips the Tour Master auto-generated prefix from old trip titles.
+ *
+ * Tour Master titles look like:  "WH-7132 – 59 – STRASBOURG LUXEMBOURG AMSTERDAM"
+ * We want:                        "Strasbourg Luxembourg Amsterdam"
+ *
+ * Pattern stripped: WH-{digits} {dash} {digits} {dash}
+ * Also strips trailing " SOLD" / " COMPLETED" suffixes.
+ */
+function whh_clean_title( string $raw ): string {
+    // Remove "WH-XXXX – XX –" or "WH-XXXX - XX -" prefix (em-dash or hyphen)
+    $cleaned = preg_replace( '/^WH-\d+\s*[–\-]+\s*\d+\s*[–\-]+\s*/u', '', $raw );
+    // Remove trailing sale/status words
+    $cleaned = preg_replace( '/\s+(SOLD|COMPLETED|SOLDOUT|SOLD\s*OUT)$/iu', '', $cleaned );
+    // Title-case (handles multibyte/Arabic chars safely)
+    return mb_convert_case( trim( $cleaned ), MB_CASE_TITLE, 'UTF-8' );
+}
+
 // ─── [whh_trips] Shortcode ────────────────────────────────────────────────────
 
 function whh_shortcode_trips( array $atts ): string {
@@ -724,34 +778,47 @@ function whh_shortcode_trips( array $atts ): string {
     ob_start();
     echo '<div class="whh-grid">';
     foreach ( $posts as $whh_post ) {
-        $t       = whh_format_tour( $whh_post );
-        $done    = ! empty( $t['travel_date'] ) && strtotime( $t['travel_date'] ) < time();
-        $cls     = $done ? 'whh-card completed' : 'whh-card';
-        $badge   = $done ? '<span class="whh-badge whh-badge-completed">Completed</span>' : '';
-        $url     = esc_url( get_permalink( (int) $t['id'] ) );
-        $img     = esc_url( $t['featured_image'] );
-        $title   = esc_html( $t['trip_number'] . ' - ' . $t['title'] );
-        $price   = $t['price_adult'] ? 'From EGP ' . number_format( (float) $t['price_adult'] ) : '';
+        $t     = whh_format_tour( $whh_post );
+        $done  = ! empty( $t['travel_date'] ) && strtotime( $t['travel_date'] ) < time();
+        $cls   = 'whh-card' . ( $done ? ' completed' : '' );
+        $url   = esc_url( get_permalink( (int) $t['id'] ) );
+        $img   = esc_url( $t['featured_image'] );
+        $title = esc_html( whh_clean_title( $t['title'] ) );
 
+        // Badges overlaid on the image
+        $done_badge   = $done ? '<span class="whh-badge-completed">Completed</span>' : '';
+        $nights_badge = ( $t['duration_nights'] > 0 )
+            ? '<span class="whh-nights-badge">' . (int) $t['duration_nights'] . ' Nights</span>'
+            : '';
+
+        // Image or emoji placeholder
+        $img_html = $img
+            ? "<img src='{$img}' alt='" . esc_attr( $t['title'] ) . "' class='whh-card-img' loading='lazy'>"
+            : '<div class="whh-card-img-placeholder">🌍</div>';
+
+        // Travel date range (no price)
         $date_str = '';
         if ( ! empty( $t['travel_date'] ) ) {
-            $s = date_i18n( 'j, M', strtotime( $t['travel_date'] ) );
-            $e = ! empty( $t['end_date'] ) ? ' - ' . date_i18n( 'j, M', strtotime( $t['end_date'] ) ) : '';
-            $date_str = 'Availability : ' . $s . $e;
+            $s = date_i18n( 'j M', strtotime( $t['travel_date'] ) );
+            $e = ! empty( $t['end_date'] )
+                ? ' – ' . date_i18n( 'j M Y', strtotime( $t['end_date'] ) )
+                : '';
+            $date_str = esc_html( $s . $e );
         }
 
         echo "
-        <div class='{$cls}'>
-            <a href='{$url}' class='whh-card-img-wrap'>
-                " . ( $img ? "<img src='{$img}' alt='" . esc_attr( $t['title'] ) . "' class='whh-card-img' loading='lazy'>" : '<div style="width:100%;height:100%;background:#eee;"></div>' ) . "
-                {$badge}
-            </a>
-            <div class='whh-card-body'>
-                <h3 class='whh-card-title'>{$title}</h3>
-                " . ( $date_str ? "<p class='whh-card-date'>" . esc_html( $date_str ) . "</p>" : '' ) . "
-                " . ( $price    ? "<p class='whh-card-price'>{$price}</p>"              : '' ) . "
+        <a href='{$url}' class='{$cls}'>
+            <div class='whh-card-img-wrap'>
+                {$img_html}
+                {$done_badge}
+                {$nights_badge}
             </div>
-        </div>";
+            <div class='whh-card-body'>
+                <h3 class='whh-card-title'>{$title}</h3>"
+                . ( $date_str ? "<p class='whh-card-date'>🗓 {$date_str}</p>" : '' ) .
+                "<div class='whh-card-cta'>View Details</div>
+            </div>
+        </a>";
     }
     echo '</div>';
     return ob_get_clean();
