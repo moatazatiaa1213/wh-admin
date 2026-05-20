@@ -14,6 +14,7 @@ import { mockCities } from '@/lib/mock/cities'
 import { mockHotels } from '@/lib/mock/hotels'
 import { mockAirlines } from '@/lib/mock/airlines'
 import { mockExcursions } from '@/lib/mock/excursions'
+import { cacheGet, cacheSet, cacheInvalidate } from '@/lib/cache'
 
 const USE_MOCK = process.env.USE_MOCK_DATA === 'true'
 
@@ -32,24 +33,38 @@ function wpFetch(path: string, init?: RequestInit) {
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
     },
+    cache: 'no-store', // prevent Next.js Data Cache from caching WP responses
   })
 }
 
 /**
- * Fetches a list endpoint. Returns an empty array instead of throwing when the
- * server responds with an error (e.g. 404 while the plugin is being updated).
- * Write operations should still use wpFetch() directly so failures surface.
+ * Fetches a list endpoint with Redis caching.
+ * - cacheKey non-null: checks Redis first (60s TTL), populates on miss
+ * - cacheKey null: bypasses cache entirely (for filtered/parameterised calls)
+ * - Always returns [] instead of throwing on error (graceful degradation)
  */
-async function wpList<T>(path: string): Promise<T[]> {
+async function wpList<T>(path: string, cacheKey: string | null): Promise<T[]> {
+  // 1. Cache read
+  if (cacheKey) {
+    const cached = await cacheGet<T[]>(cacheKey)
+    if (cached) return cached
+  }
+
+  // 2. Fetch from WordPress
   try {
     const res = await wpFetch(path)
     if (!res.ok) {
-      console.warn(`[wp-client] GET ${path} → ${res.status} (returning [])`)
+      console.warn('[wp-client]', { endpoint: path, status: res.status, ts: Date.now() })
       return []
     }
-    return res.json()
+    const data: T[] = await res.json()
+
+    // 3. Populate cache
+    if (cacheKey) await cacheSet(cacheKey, data)
+
+    return data
   } catch (e) {
-    console.warn(`[wp-client] GET ${path} failed:`, e)
+    console.warn('[wp-client]', { endpoint: path, error: String(e), ts: Date.now() })
     return []
   }
 }
@@ -63,16 +78,14 @@ export async function getTrips(params?: { search?: string; status?: string }): P
       const q = params.search.toLowerCase()
       trips = trips.filter(t => t.title.toLowerCase().includes(q) || t.destination.toLowerCase().includes(q))
     }
-    if (params?.status) {
-      trips = trips.filter(t => t.status === params.status)
-    }
+    if (params?.status) trips = trips.filter(t => t.status === params.status)
     return trips
   }
-
   const qs = new URLSearchParams()
   if (params?.search) qs.set('search', params.search)
   if (params?.status) qs.set('status', params.status)
-  return wpList<Trip>(`/tours?${qs}`)
+  const hasFilters = !!(params?.search || params?.status)
+  return wpList<Trip>(`/tours?${qs}`, hasFilters ? null : 'whh:tours')
 }
 
 export async function getTrip(id: string): Promise<Trip> {
@@ -94,6 +107,7 @@ export async function createTrip(data: TripInput): Promise<Trip> {
   }
   const res = await wpFetch('/tours', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:tours')
   return res.json()
 }
 
@@ -106,6 +120,7 @@ export async function updateTrip(id: string, data: TripInput): Promise<Trip> {
   }
   const res = await wpFetch(`/tours/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:tours')
   return res.json()
 }
 
@@ -117,6 +132,7 @@ export async function deleteTrip(id: string): Promise<void> {
   }
   const res = await wpFetch(`/tours/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:tours')
 }
 
 // ─── Bookings ────────────────────────────────────────────────────────────────
@@ -129,7 +145,7 @@ export async function getBookings(params?: { status?: string }): Promise<Booking
   }
   const qs = new URLSearchParams()
   if (params?.status) qs.set('status', params.status)
-  return wpList<Booking>(`/bookings?${qs}`)
+  return wpList<Booking>(`/bookings?${qs}`, params?.status ? null : 'whh:bookings')
 }
 
 export async function getBooking(id: string): Promise<Booking> {
@@ -147,7 +163,7 @@ export async function getBooking(id: string): Promise<Booking> {
 
 export async function getCustomers(): Promise<Customer[]> {
   if (USE_MOCK) return [...mockCustomers]
-  return wpList<Customer>('/customers')
+  return wpList<Customer>('/customers', 'whh:customers')
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
@@ -165,7 +181,7 @@ export async function getCustomer(id: string): Promise<Customer> {
 
 export async function getPackages(): Promise<Package[]> {
   if (USE_MOCK) return [...mockPackages]
-  return wpList<Package>('/packages')
+  return wpList<Package>('/packages', 'whh:packages')
 }
 
 export async function getPackage(id: string): Promise<Package> {
@@ -188,6 +204,7 @@ export async function createPackage(data: PackageInput): Promise<Package> {
   }
   const res = await wpFetch('/packages', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:packages')
   return res.json()
 }
 
@@ -201,6 +218,7 @@ export async function updatePackage(id: string, data: PackageInput): Promise<Pac
   }
   const res = await wpFetch(`/packages/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:packages')
   return res.json()
 }
 
@@ -212,13 +230,14 @@ export async function deletePackage(id: string): Promise<void> {
   }
   const res = await wpFetch(`/packages/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:packages')
 }
 
 // ─── Cities ──────────────────────────────────────────────────────────────────
 
 export async function getCities(): Promise<City[]> {
   if (USE_MOCK) return [...mockCities]
-  return wpList<City>('/cities')
+  return wpList<City>('/cities', 'whh:cities')
 }
 
 export async function getCity(id: string): Promise<City> {
@@ -240,6 +259,7 @@ export async function createCity(data: CityInput): Promise<City> {
   }
   const res = await wpFetch('/cities', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:cities')
   return res.json()
 }
 
@@ -252,6 +272,7 @@ export async function updateCity(id: string, data: CityInput): Promise<City> {
   }
   const res = await wpFetch(`/cities/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:cities')
   return res.json()
 }
 
@@ -263,13 +284,14 @@ export async function deleteCity(id: string): Promise<void> {
   }
   const res = await wpFetch(`/cities/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:cities')
 }
 
 // ─── Hotels ──────────────────────────────────────────────────────────────────
 
 export async function getHotels(): Promise<Hotel[]> {
   if (USE_MOCK) return [...mockHotels]
-  return wpList<Hotel>('/hotels')
+  return wpList<Hotel>('/hotels', 'whh:hotels')
 }
 
 export async function getHotel(id: string): Promise<Hotel> {
@@ -291,6 +313,7 @@ export async function createHotel(data: HotelInput): Promise<Hotel> {
   }
   const res = await wpFetch('/hotels', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:hotels')
   return res.json()
 }
 
@@ -303,6 +326,7 @@ export async function updateHotel(id: string, data: HotelInput): Promise<Hotel> 
   }
   const res = await wpFetch(`/hotels/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:hotels')
   return res.json()
 }
 
@@ -314,13 +338,14 @@ export async function deleteHotel(id: string): Promise<void> {
   }
   const res = await wpFetch(`/hotels/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:hotels')
 }
 
 // ─── Airlines ────────────────────────────────────────────────────────────────
 
 export async function getAirlines(): Promise<Airline[]> {
   if (USE_MOCK) return [...mockAirlines]
-  return wpList<Airline>('/airlines')
+  return wpList<Airline>('/airlines', 'whh:airlines')
 }
 
 export async function getAirline(id: string): Promise<Airline> {
@@ -342,6 +367,7 @@ export async function createAirline(data: AirlineInput): Promise<Airline> {
   }
   const res = await wpFetch('/airlines', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:airlines')
   return res.json()
 }
 
@@ -354,6 +380,7 @@ export async function updateAirline(id: string, data: AirlineInput): Promise<Air
   }
   const res = await wpFetch(`/airlines/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:airlines')
   return res.json()
 }
 
@@ -365,13 +392,14 @@ export async function deleteAirline(id: string): Promise<void> {
   }
   const res = await wpFetch(`/airlines/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:airlines')
 }
 
 // ─── Excursions ───────────────────────────────────────────────────────────────
 
 export async function getExcursions(): Promise<Excursion[]> {
   if (USE_MOCK) return [...mockExcursions]
-  return wpList<Excursion>('/excursions')
+  return wpList<Excursion>('/excursions', 'whh:excursions')
 }
 
 export async function getExcursion(id: string): Promise<Excursion> {
@@ -393,6 +421,7 @@ export async function createExcursion(data: ExcursionInput): Promise<Excursion> 
   }
   const res = await wpFetch('/excursions', { method: 'POST', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:excursions')
   return res.json()
 }
 
@@ -405,6 +434,7 @@ export async function updateExcursion(id: string, data: ExcursionInput): Promise
   }
   const res = await wpFetch(`/excursions/${id}`, { method: 'PUT', body: JSON.stringify(data) })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:excursions')
   return res.json()
 }
 
@@ -416,4 +446,5 @@ export async function deleteExcursion(id: string): Promise<void> {
   }
   const res = await wpFetch(`/excursions/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  await cacheInvalidate('whh:excursions')
 }
