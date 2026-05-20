@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/multi-select'
+import { DatePicker } from '@/components/date-picker'
 import type { Trip, City, Hotel, Airline, Excursion } from '@/lib/types'
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -191,12 +192,20 @@ export function TripForm({ trip, cities, hotels, airlines, excursions }: TripFor
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className={lbl}>Travel Date</Label>
-          <Input {...register('travel_date')} type="date" className={f} />
+          <DatePicker
+            value={watch('travel_date')}
+            onChange={val => setValue('travel_date', val, { shouldValidate: true })}
+            placeholder="Pick travel date"
+          />
           {errors.travel_date && <p className={err}>{errors.travel_date.message}</p>}
         </div>
         <div className="space-y-1.5">
           <Label className={lbl}>End Date</Label>
-          <Input {...register('end_date')} type="date" className={f} />
+          <DatePicker
+            value={watch('end_date')}
+            onChange={val => setValue('end_date', val, { shouldValidate: true })}
+            placeholder="Pick end date"
+          />
           {errors.end_date && <p className={err}>{errors.end_date.message}</p>}
         </div>
       </div>
