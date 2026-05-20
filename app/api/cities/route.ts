@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     revalidatePath('/cities')
     return NextResponse.json(city, { status: 201 })
   } catch (e) {
+    console.error('[POST /api/cities]', String(e))
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }

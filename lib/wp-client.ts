@@ -258,7 +258,10 @@ export async function createCity(data: CityInput): Promise<City> {
     return city
   }
   const res = await wpFetch('/cities', { method: 'POST', body: JSON.stringify(data) })
-  if (!res.ok) throw new Error(`WP API error: ${res.status}`)
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`WP API error ${res.status}: ${body}`)
+  }
   await cacheInvalidate('whh:cities')
   return res.json()
 }
