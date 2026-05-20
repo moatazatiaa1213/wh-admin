@@ -37,6 +37,7 @@ export function DatePicker({
       setViewMonth(selected.getMonth())
       setViewYear(selected.getFullYear())
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
   function prevMonth() {
