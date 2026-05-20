@@ -49,7 +49,10 @@ export function CityForm({ city }: CityFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (!res.ok) throw new Error('Failed to save city')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
       return res.json()
     },
     onSuccess: () => {
@@ -84,7 +87,7 @@ export function CityForm({ city }: CityFormProps) {
 
       {mutation.isError && (
         <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/50 rounded-md px-3 py-2">
-          Failed to save city. Please try again.
+          {(mutation.error as Error)?.message ?? 'Failed to save city. Please try again.'}
         </p>
       )}
 
