@@ -652,6 +652,11 @@ function whh_print_styles(): void {
         padding: 16px 18px 20px;
         display: flex; flex-direction: column; flex: 1;
     }
+    .whh-card-number {
+        font-size: 10px; font-weight: 800;
+        color: #c9a227; letter-spacing: 1.2px;
+        text-transform: uppercase; margin: 0 0 5px;
+    }
     .whh-card-title {
         font-size: 15px; font-weight: 700;
         color: #1a1a1a; margin: 0 0 8px; line-height: 1.45;
@@ -814,6 +819,7 @@ function whh_shortcode_trips( array $atts ): string {
                 {$nights_badge}
             </div>
             <div class='whh-card-body'>
+                <p class='whh-card-number'>" . esc_html( $t['trip_number'] ) . "</p>
                 <h3 class='whh-card-title'>{$title}</h3>"
                 . ( $date_str ? "<p class='whh-card-date'>🗓 {$date_str}</p>" : '' ) .
                 "<div class='whh-card-cta'>View Details</div>
