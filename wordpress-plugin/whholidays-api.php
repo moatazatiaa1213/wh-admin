@@ -605,9 +605,9 @@ function whh_meta_inspect(): WP_REST_Response {
 // Shortcodes + single tour template override.
 // No FTP needed — everything is injected via hooks.
 
-add_action( 'wp_head',      'whh_print_styles' );
-add_shortcode( 'whh_trips', 'whh_shortcode_trips' );
-add_filter( 'the_content',  'whh_filter_tour_content' );
+add_action( 'wp_head',        'whh_print_styles' );
+add_shortcode( 'whh_trips',   'whh_shortcode_trips' );
+add_action( 'template_redirect', 'whh_single_tour_override' );
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -884,11 +884,19 @@ function whh_shortcode_trips( array $atts ): string {
 }
 
 // ─── Single Tour Detail ───────────────────────────────────────────────────────
+// Uses template_redirect instead of the_content filter so it works even when
+// Tour Master's single-tour.php template doesn't call the_content() at all.
 
-function whh_filter_tour_content( string $content ): string {
-    if ( ! is_singular( 'tour' ) || ! in_the_loop() || ! is_main_query() ) return $content;
+function whh_single_tour_override(): void {
+    if ( ! is_singular( 'tour' ) ) return;
     global $post;
-    return whh_render_detail( whh_format_tour( $post ) );
+
+    get_header();
+    echo '<div id="whh-tour-wrap" style="max-width:1160px;margin:0 auto;padding:40px 24px;min-height:60vh;">';
+    echo whh_render_detail( whh_format_tour( $post ) );
+    echo '</div>';
+    get_footer();
+    exit; // Stop WordPress loading Tour Master's blank template
 }
 
 function whh_render_detail( array $t ): string {
