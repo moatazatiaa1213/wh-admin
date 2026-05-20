@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCities, createCity } from '@/lib/wp-client'
+import { requireAuth } from '@/lib/api-auth'
+import { revalidatePath } from 'next/cache'
 
 export async function GET() {
   try {
@@ -11,9 +13,12 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAuth()
+  if (auth) return auth
   try {
     const data = await req.json()
     const city = await createCity(data)
+    revalidatePath('/cities')
     return NextResponse.json(city, { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

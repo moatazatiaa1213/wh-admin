@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAirline, updateAirline, deleteAirline } from '@/lib/wp-client'
+import { requireAuth } from '@/lib/api-auth'
+import { revalidatePath } from 'next/cache'
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
@@ -11,9 +13,12 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const auth = await requireAuth()
+  if (auth) return auth
   try {
     const data = await req.json()
     const airline = await updateAirline(params.id, data)
+    revalidatePath('/airlines')
     return NextResponse.json(airline)
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
@@ -21,8 +26,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  const auth = await requireAuth()
+  if (auth) return auth
   try {
     await deleteAirline(params.id)
+    revalidatePath('/airlines')
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
