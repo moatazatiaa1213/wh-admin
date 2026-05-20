@@ -584,7 +584,7 @@ function whh_meta_inspect(): WP_REST_Response {
         // Filter to only tourmaster-* and whh-* keys
         $filtered = [];
         foreach ( $all_meta as $key => $values ) {
-            if ( str_starts_with( $key, 'tourmaster-' ) || str_starts_with( $key, 'whh-' ) ) {
+            if ( strpos( $key, 'tourmaster-' ) === 0 || strpos( $key, 'whh-' ) === 0 ) {
                 $val = $values[0] ?? '';
                 // Try to unserialize
                 $unserialized = @maybe_unserialize( $val );
