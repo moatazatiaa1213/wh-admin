@@ -100,16 +100,36 @@ export async function getTrip(id: string): Promise<Trip> {
 }
 
 /**
- * Returns the next available sequential trip number from WordPress, e.g. "WH-221".
- * Falls back to "WH-001" if the endpoint is unreachable or no trips exist yet.
+ * Returns the next available sequential trip number, e.g. "WH-221".
+ *
+ * Strategy:
+ *  - Fetch all trips and collect their trip_number fields
+ *  - Old Tour Master trips have post-ID-based numbers like WH-7132 (large)
+ *  - Real sequential numbers are WH-001 … WH-NNN (small)
+ *  - We only consider numbers < 5000 as "real" sequential ones
+ *  - Build a Set of all taken numbers to guarantee no duplicates
+ *  - Walk up from max+1 until we find one not in the Set
  */
 export async function getNextTripNumber(): Promise<string> {
   if (USE_MOCK) return 'WH-001'
   try {
-    const res = await wpFetch('/tours/next-number')
-    if (!res.ok) return 'WH-001'
-    const data = await res.json() as { next: string }
-    return data.next
+    const trips = await getTrips({})
+
+    // Collect every numeric part that looks like a real sequential number
+    const taken = new Set<number>()
+    for (const t of trips) {
+      const m = t.trip_number?.match(/^WH-(\d+)$/)
+      if (m) {
+        const n = parseInt(m[1], 10)
+        if (n > 0 && n < 5000) taken.add(n)   // ignore post-ID fallbacks (≥5000)
+      }
+    }
+
+    // Find the next number not already taken
+    let next = (taken.size > 0 ? Math.max(...taken) : 0) + 1
+    while (taken.has(next)) next++             // skip any gaps/duplicates
+
+    return `WH-${String(next).padStart(3, '0')}`
   } catch {
     return 'WH-001'
   }
