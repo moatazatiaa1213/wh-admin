@@ -5,19 +5,10 @@ import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
 import { DeleteTripButton } from './delete-trip-button'
 import { Plus, Pencil } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 
 interface Props {
   searchParams: { search?: string; status?: string }
-}
-
-function fmtDate(raw: string) {
-  if (!raw) return '—'
-  // Tour Master may return DD/MM/YYYY — normalise to a parseable form
-  const parts = raw.split('/')
-  const iso = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : raw
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return raw
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export default async function TripsPage({ searchParams }: Props) {
