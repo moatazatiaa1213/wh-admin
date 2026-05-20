@@ -74,7 +74,12 @@ export async function parseTripFromText(text: string): Promise<ParsedTrip> {
 export async function parseTripFromImage(
   imageBuffer: Buffer,
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg',
+  caption?: string,
 ): Promise<ParsedTrip> {
+  const prompt = caption
+    ? `Read the image AND use this caption text to extract trip details as JSON. Caption: "${caption}"`
+    : 'Read all text visible in this image and extract the trip details as JSON.'
+
   const result = await model.generateContent([
     buildSystemPrompt(),
     {
@@ -83,7 +88,7 @@ export async function parseTripFromImage(
         mimeType,
       },
     },
-    'Read all text visible in this image and extract the trip details as JSON.',
+    prompt,
   ])
   return JSON.parse(extractJson(result.response.text())) as ParsedTrip
 }

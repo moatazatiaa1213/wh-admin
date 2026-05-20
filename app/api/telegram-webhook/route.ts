@@ -65,10 +65,11 @@ export async function POST(req: NextRequest) {
 
   const chatId = (message.chat as Record<string, unknown>)?.id as number
   const userId = ((message.from as Record<string, unknown>)?.id as number) ?? 0
-  const text   = message.text  as string | undefined
-  const voice  = message.voice as Record<string, unknown> | undefined
+  const text    = message.text    as string | undefined
+  const caption = message.caption as string | undefined   // text attached to a photo/video
+  const voice   = message.voice   as Record<string, unknown> | undefined
   // Telegram sends photo as array — last item = highest resolution
-  const photo  = message.photo as Record<string, unknown>[] | undefined
+  const photo   = message.photo   as Record<string, unknown>[] | undefined
 
   // 2. Only allow the configured admin user
   if (userId !== ALLOWED_USER_ID) {
@@ -136,15 +137,16 @@ export async function POST(req: NextRequest) {
       parsed = await parseTripFromAudio(buffer, 'audio/ogg')
 
     } else if (photo && photo.length > 0) {
-      // ── Photo → Gemini Vision (use last = highest resolution) ──
+      // ── Photo (+ optional caption) → Gemini Vision ──
       await sendMessage(chatId, '🖼️ Reading your image...')
       const best   = photo[photo.length - 1] as Record<string, unknown>
       const buffer = await downloadTelegramFile(best.file_id as string)
-      parsed = await parseTripFromImage(buffer, 'image/jpeg')
+      // Pass caption alongside the image so Gemini sees both
+      parsed = await parseTripFromImage(buffer, 'image/jpeg', caption)
 
-    } else if (text) {
-      // ── Slash commands ──
-      if (text.startsWith('/')) {
+    } else if (text ?? caption) {
+      // ── Slash commands (text only) ──
+      if (text?.startsWith('/')) {
         if (text === '/start' || text === '/help') {
           await sendMessage(chatId,
             '👋 <b>WHHolidays Trip Bot</b>\n\n' +
@@ -158,9 +160,9 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ ok: true })
       }
-      // ── Plain text → Gemini Text ──
+      // ── Plain text (or standalone caption) → Gemini Text ──
       await sendMessage(chatId, '🔍 Extracting trip details...')
-      parsed = await parseTripFromText(text)
+      parsed = await parseTripFromText((text ?? caption)!)
 
     } else {
       await sendMessage(chatId,
