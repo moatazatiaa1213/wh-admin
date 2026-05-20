@@ -53,6 +53,7 @@ export interface Trip {
 
   featured_image?: string
   status: 'draft' | 'published'
+  availability: 'available' | 'completed'   // manually set; 'completed' = greyed out on public site
   created_at: string
 
   // Library ID references

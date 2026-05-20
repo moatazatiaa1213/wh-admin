@@ -4,6 +4,7 @@ import { Topbar } from '@/components/topbar'
 import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
 import { DeleteTripButton } from './delete-trip-button'
+import { AvailabilityToggle } from './availability-toggle'
 import { Plus, Pencil } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -65,7 +66,7 @@ export default async function TripsPage({ searchParams }: Props) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1c1c1c]">
-              {['Title', 'Destination', 'Dates', 'Adult Price', 'Duration', 'Status', 'Actions'].map(h => (
+              {['Title', 'Destination', 'Dates', 'Adult Price', 'Duration', 'Status', 'Availability', 'Actions'].map(h => (
                 <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-5 py-3">
                   {h}
                 </th>
@@ -93,6 +94,12 @@ export default async function TripsPage({ searchParams }: Props) {
                   <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">{trip.price_adult ? `$${Number(trip.price_adult).toLocaleString()}` : '—'}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{trip.duration_days}D / {trip.duration_nights}N</td>
                   <td className="px-5 py-3.5"><StatusBadge status={trip.status} /></td>
+                  <td className="px-5 py-3.5">
+                    <AvailabilityToggle
+                      tripId={trip.id}
+                      current={trip.availability ?? 'available'}
+                    />
+                  </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
                       <Link href={`/trips/${trip.id}/edit`}>

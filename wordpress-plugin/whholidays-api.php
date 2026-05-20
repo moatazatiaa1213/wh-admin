@@ -190,6 +190,9 @@ function whh_format_tour( WP_Post $post ): array {
         'single_rate'     => $single_rate,
         'featured_image'  => get_the_post_thumbnail_url( $id, 'large' ) ?: '',
         'status'          => $post->post_status === 'publish' ? 'published' : 'draft',
+        // availability: manually set via dashboard; falls back to detecting SOLD in title
+        'availability'    => get_post_meta( $id, 'whh-availability', true )
+                                ?: ( stripos( $post->post_title, 'sold' ) !== false ? 'completed' : 'available' ),
         'created_at'      => $post->post_date_gmt . 'Z',
         'city_ids'        => whh_meta_json( $id, 'whh-city-ids' ),
         'hotel_ids'       => whh_meta_json( $id, 'whh-hotel-ids' ),
@@ -301,6 +304,7 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
 
     // WHH dashboard-specific fields
     if ( isset( $data['trip_number'] ) )   update_post_meta( $post_id, 'whh-trip-number',   sanitize_text_field( $data['trip_number'] ) );
+    if ( isset( $data['availability'] ) )  update_post_meta( $post_id, 'whh-availability',  sanitize_text_field( $data['availability'] ) );
     if ( isset( $data['city_ids'] ) )      update_post_meta( $post_id, 'whh-city-ids',      wp_json_encode( $data['city_ids'] ) );
     if ( isset( $data['hotel_ids'] ) )     update_post_meta( $post_id, 'whh-hotel-ids',     wp_json_encode( $data['hotel_ids'] ) );
     if ( isset( $data['airline_ids'] ) )   update_post_meta( $post_id, 'whh-airline-ids',   wp_json_encode( $data['airline_ids'] ) );
@@ -831,7 +835,9 @@ function whh_shortcode_trips( array $atts ): string {
     echo '<div class="whh-grid">';
     foreach ( $posts as $whh_post ) {
         $t     = whh_format_tour( $whh_post );
-        $done  = ! empty( $t['travel_date'] ) && strtotime( $t['travel_date'] ) < time();
+        // Mark as completed if: manually set, SOLD in title, or travel date has passed
+        $done  = ( $t['availability'] === 'completed' )
+              || ( ! empty( $t['travel_date'] ) && strtotime( $t['travel_date'] ) < time() );
         $cls   = 'whh-card' . ( $done ? ' completed' : '' );
         $url   = esc_url( get_permalink( (int) $t['id'] ) );
         $img   = esc_url( $t['featured_image'] );
