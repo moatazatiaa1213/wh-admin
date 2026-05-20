@@ -126,7 +126,10 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      if (!res.ok) throw new Error('Failed to save trip')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? 'Failed to save trip')
+      }
       return res.json()
     },
     onSuccess: () => {
@@ -141,6 +144,13 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
 
   return (
     <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-5 max-w-3xl">
+
+      {/* ── API error banner ── */}
+      {mutation.isError && (
+        <div className="rounded-md border border-red-800/60 bg-red-950/40 px-4 py-3 text-sm text-red-400">
+          {(mutation.error as Error).message}
+        </div>
+      )}
 
       {/* ── Basic Info ── */}
       <SectionHeader title="Basic Information" />
