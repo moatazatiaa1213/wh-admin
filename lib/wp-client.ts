@@ -126,7 +126,7 @@ export async function getNextTripNumber(): Promise<string> {
     }
 
     // Find the next number not already taken
-    let next = (taken.size > 0 ? Math.max(...taken) : 0) + 1
+    let next = (taken.size > 0 ? Math.max(...Array.from(taken)) : 0) + 1
     while (taken.has(next)) next++             // skip any gaps/duplicates
 
     return `WH-${String(next).padStart(3, '0')}`
