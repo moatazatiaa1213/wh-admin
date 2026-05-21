@@ -1,6 +1,6 @@
 import { NextResponse }    from 'next/server'
 import { renderToBuffer }  from '@react-pdf/renderer'
-import { createElement }   from 'react'
+import { createElement } from 'react'
 import * as fs             from 'fs'
 import * as path           from 'path'
 import {
@@ -61,7 +61,8 @@ export async function GET(
       logoBase64: LOGO_BASE64,
     })
 
-    const buffer = await renderToBuffer(element)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const buffer = await renderToBuffer(element as any)
 
     const filename = `${trip.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-brochure.pdf`
 
