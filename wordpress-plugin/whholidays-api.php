@@ -782,6 +782,15 @@ function whh_print_styles(): void {
     }
     .whh-contact-btn:hover { background: #a8861f; }
 
+    .whh-brochure-btn {
+        display: block; width: 100%; padding: 11px;
+        text-align: center; background: #fff; color: #2e7d32 !important;
+        font-weight: 700; font-size: 12px; letter-spacing: 0.5px;
+        text-transform: uppercase; border-radius: 4px; margin-top: 10px;
+        text-decoration: none; border: 2px solid #2e7d32; transition: all .2s;
+    }
+    .whh-brochure-btn:hover { background: #2e7d32; color: #fff !important; }
+
     .whh-why-box { background: #f8f8f8; border-radius: 6px; padding: 20px; }
     .whh-why-box h4 { font-size: 14px; font-weight: 700; margin: 0 0 12px; }
     .whh-why-box ul { list-style: none; padding: 0; margin: 0; }
@@ -1049,6 +1058,14 @@ function whh_render_detail( array $t ): string {
 
                     <a href="<?php echo $contact_url; ?>" class="whh-contact-btn">
                         Contact Us to Book
+                    </a>
+
+                    <a href="https://wh-admin-theta.vercel.app/api/trips/<?php echo esc_attr( $t['id'] ); ?>/pdf"
+                       target="_blank"
+                       rel="noopener"
+                       class="whh-brochure-btn"
+                       download>
+                        Download Brochure (PDF)
                     </a>
                 </div>
 

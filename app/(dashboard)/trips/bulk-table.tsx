@@ -8,7 +8,7 @@ import { StatusToggle } from './status-toggle'
 import { AvailabilityToggle } from './availability-toggle'
 import { DeleteTripButton } from './delete-trip-button'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2, CheckCheck, X } from 'lucide-react'
+import { Pencil, Trash2, CheckCheck, X, FileDown } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -225,6 +225,11 @@ export function BulkTable({ trips }: Props) {
                         <Pencil size={13} />
                       </Button>
                     </Link>
+                    <a href={`/api/trips/${trip.id}/pdf`} download target="_blank" rel="noreferrer">
+                      <Button variant="ghost" size="sm" title="Download Brochure PDF" className="h-7 px-2 text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 cursor-pointer">
+                        <FileDown size={13} />
+                      </Button>
+                    </a>
                     <DeleteTripButton id={trip.id} title={trip.title} />
                   </div>
                 </td>
