@@ -71,6 +71,32 @@ export async function answerCallback(callbackId: string, toast?: string): Promis
   })
 }
 
+/**
+ * Send a message with a persistent reply keyboard (the button bar at the
+ * bottom of the chat). resize_keyboard makes it compact; persistent keeps
+ * it visible after the user taps a button.
+ */
+export async function sendWithReplyKeyboard(
+  chatId:  number,
+  text:    string,
+  buttons: string[][],   // rows of button labels
+): Promise<void> {
+  await fetch(`${TG}/sendMessage`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      chat_id:    chatId,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: {
+        keyboard:          buttons.map(row => row.map(label => ({ text: label }))),
+        resize_keyboard:   true,
+        persistent:        true,
+      },
+    }),
+  })
+}
+
 // ── File download ─────────────────────────────────────────────────────────────
 
 /**

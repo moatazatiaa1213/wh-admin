@@ -1,7 +1,7 @@
 // app/api/telegram-webhook/route.ts
 
 import { NextRequest, NextResponse }           from 'next/server'
-import { sendMessage, sendKeyboard,
+import { sendMessage, sendKeyboard, sendWithReplyKeyboard,
          answerCallback, downloadTelegramFile } from '@/lib/telegram'
 import { parseTripFromText, parseTripFromImage,
          parseTripFromAudio, ParsedTrip }       from '@/lib/gemini-trip-parser'
@@ -270,42 +270,92 @@ export async function POST(req: NextRequest) {
   // ── /start / /help / /menu ─────────────────────────────────────────────────
   if (text === '/start' || text === '/help' || text === '/menu') {
     await clearConvState(chatId)
+    // Show the persistent reply-keyboard button bar first, then the inline menu
+    await sendWithReplyKeyboard(
+      chatId,
+      '👋 Welcome! Use the buttons below or tap /menu anytime.',
+      [
+        ['🗺️ Trips',  '🏙️ Cities'],
+        ['🏨 Hotels', '✈️ Airlines'],
+        ['🎯 Excursions', '❌ Cancel'],
+      ],
+    )
     await sendKeyboard(chatId, mainMenuMsg(), mainMenuKb())
     return NextResponse.json({ ok: true })
   }
 
-  // ── Section shortcut commands ──────────────────────────────────────────────
-  if (text === '/trips') {
+  // ── Persistent reply-keyboard button taps ──────────────────────────────────
+  if (text === '🗺️ Trips') {
     await clearConvState(chatId)
-    const msgId = await sendKeyboard(chatId, '🗺️ <b>Trips</b>\n\nChoose an action:', [
+    await sendKeyboard(chatId, '🗺️ <b>Trips</b>\n\nChoose an action:', [
       [{ text: '📋 List Trips',      callback_data: 't:list:0' }],
       [{ text: '➕ New Trip via AI', callback_data: 't:new'    }],
       [{ text: '⬅️ Main Menu',       callback_data: 'm:main'   }],
     ])
-    void msgId
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '🏙️ Cities') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🏙️ Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showCitiesList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '🏨 Hotels') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🏨 Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showHotelsList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '✈️ Airlines') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '✈️ Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showAirlinesList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '🎯 Excursions') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🎯 Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showExcursionsList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '❌ Cancel') {
+    await clearConvState(chatId)
+    await cacheInvalidate(pendingKey(chatId))
+    await sendKeyboard(chatId, '❌ Cancelled.', mainMenuKb())
+    return NextResponse.json({ ok: true })
+  }
+
+  // ── Section slash-command shortcuts (still work) ───────────────────────────
+  if (text === '/trips') {
+    await clearConvState(chatId)
+    await sendKeyboard(chatId, '🗺️ <b>Trips</b>\n\nChoose an action:', [
+      [{ text: '📋 List Trips',      callback_data: 't:list:0' }],
+      [{ text: '➕ New Trip via AI', callback_data: 't:new'    }],
+      [{ text: '⬅️ Main Menu',       callback_data: 'm:main'   }],
+    ])
     return NextResponse.json({ ok: true })
   }
   if (text === '/cities') {
     await clearConvState(chatId)
-    const msgId = await sendKeyboard(chatId, '🏙️ Loading cities…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    const msgId = await sendKeyboard(chatId, '🏙️ Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
     await showCitiesList(chatId, msgId)
     return NextResponse.json({ ok: true })
   }
   if (text === '/hotels') {
     await clearConvState(chatId)
-    const msgId = await sendKeyboard(chatId, '🏨 Loading hotels…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    const msgId = await sendKeyboard(chatId, '🏨 Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
     await showHotelsList(chatId, msgId)
     return NextResponse.json({ ok: true })
   }
   if (text === '/airlines') {
     await clearConvState(chatId)
-    const msgId = await sendKeyboard(chatId, '✈️ Loading airlines…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    const msgId = await sendKeyboard(chatId, '✈️ Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
     await showAirlinesList(chatId, msgId)
     return NextResponse.json({ ok: true })
   }
   if (text === '/excursions') {
     await clearConvState(chatId)
-    const msgId = await sendKeyboard(chatId, '🎯 Loading excursions…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    const msgId = await sendKeyboard(chatId, '🎯 Loading…', [[{ text: '⏳', callback_data: 'm:main' }]])
     await showExcursionsList(chatId, msgId)
     return NextResponse.json({ ok: true })
   }
