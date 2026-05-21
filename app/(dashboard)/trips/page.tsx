@@ -3,6 +3,7 @@ import { getTrips } from '@/lib/wp-client'
 import { Topbar } from '@/components/topbar'
 import { Button } from '@/components/ui/button'
 import { BulkTable } from './bulk-table'
+import { TripImportDialog } from '@/components/trip-import-dialog'
 import { Plus } from 'lucide-react'
 
 interface Props {
@@ -21,11 +22,14 @@ export default async function TripsPage({ searchParams }: Props) {
         title="Trips"
         subtitle={`${trips.length} trip${trips.length !== 1 ? 's' : ''}`}
         action={
-          <Link href="/trips/new">
-            <Button size="sm" className="bg-sky-500 hover:bg-sky-600 text-white cursor-pointer transition-colors duration-150">
-              <Plus size={14} className="mr-1.5" /> New Trip
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <TripImportDialog />
+            <Link href="/trips/new">
+              <Button size="sm" className="bg-sky-500 hover:bg-sky-600 text-white cursor-pointer transition-colors duration-150">
+                <Plus size={14} className="mr-1.5" /> New Trip
+              </Button>
+            </Link>
+          </div>
         }
       />
 
