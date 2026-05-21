@@ -23,6 +23,8 @@ import {
   doDeleteCity, doDeleteHotel, doDeleteAirline, doDeleteExcursion,
   // create flows
   startCreateFlow, handleConvStep,
+  // image update flow
+  startUpdateImageFlow, handleImageUpdate,
 } from '@/lib/tg-bot'
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -91,6 +93,7 @@ async function handleCallback(
     if (action === 'com')    { await setTripAvailability(chatId, msgId, id, 'completed');   return }
     if (action === 'del')    { await confirmDeleteTrip(chatId, msgId, id);           return }
     if (action === 'dok')    { await doDeleteTrip(chatId, msgId, id);                return }
+    if (action === 'img')    { await startUpdateImageFlow(chatId, id);               return }
 
     // Confirm/discard trip from AI parse
     if (action === 'create_ok') {
@@ -105,8 +108,9 @@ async function handleCallback(
         let featuredImageId: number | undefined
         if (pending.tg_file_id) {
           try {
-            const buf = await downloadTelegramFile(pending.tg_file_id)
-            featuredImageId = await uploadTripImage(buf, 'image/jpeg', `trip-${Date.now()}.jpg`)
+            const buf    = await downloadTelegramFile(pending.tg_file_id)
+            const upload = await uploadTripImage(buf, 'image/jpeg', `trip-${Date.now()}.jpg`)
+            featuredImageId = upload.id
           } catch { /* skip image on failure */ }
         }
         const trip = await createTrip({
@@ -360,9 +364,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  // ── Active conversation flow (city/hotel/airline/excursion create) ─────────
+  // ── Active conversation flow ───────────────────────────────────────────────
   const convState = await getConvState(chatId)
-  if (convState && text) {
+
+  // Photo received while in update_image flow → update trip image
+  if (convState?.flow === 'update_image' && photo && photo.length > 0) {
+    try {
+      await sendMessage(chatId, '⏳ Uploading image…')
+      const best   = photo[photo.length - 1] as Record<string, unknown>
+      const buffer = await downloadTelegramFile(best.file_id as string)
+      await handleImageUpdate(chatId, convState.data.tripId, buffer)
+    } catch (e) {
+      await clearConvState(chatId)
+      await sendMessage(chatId, `❌ Failed: ${String(e)}`)
+    }
+    return NextResponse.json({ ok: true })
+  }
+
+  // Text steps for create flows (city / hotel / airline / excursion)
+  if (convState && text && convState.flow !== 'update_image') {
     try {
       await handleConvStep(chatId, convState, text)
     } catch (e) {

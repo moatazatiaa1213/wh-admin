@@ -18,6 +18,7 @@ import { sendMessage, sendKeyboard, editMessage } from '@/lib/telegram'
 import { cacheGet, cacheSet, cacheInvalidate }    from '@/lib/cache'
 import {
   getTrips, getTrip, updateTrip, deleteTrip,
+  uploadTripImage,
   getCities,    createCity,    deleteCity,
   getHotels,    createHotel,    deleteHotel,
   getAirlines,  createAirline,  deleteAirline,
@@ -29,7 +30,7 @@ import type { Trip }           from '@/lib/types'
 // ─── Conversation state ───────────────────────────────────────────────────────
 
 export interface ConvState {
-  flow: 'city' | 'hotel' | 'airline' | 'excursion'
+  flow: 'city' | 'hotel' | 'airline' | 'excursion' | 'update_image'
   step: string
   data: Record<string, string>
 }
@@ -94,6 +95,7 @@ export function tripDetailKb(id: string, status: string, avail: string): InlineK
   return [
     [statusBtn],
     [availBtn],
+    [{ text: '📷 Change Image',   callback_data: `t:img:${id}` }],
     [{ text: '🗑️ Delete Trip',   callback_data: `t:del:${id}` }],
     [{ text: '◀️ Back to List',  callback_data: 't:list:0'    }],
   ]
@@ -391,10 +393,11 @@ export async function startCreateFlow(
   await clearConvState(chatId)
 
   const questions: Record<ConvState['flow'], string> = {
-    city:      '🏙️ <b>New City</b>\n\nEnter the city <b>name</b>:',
-    hotel:     '🏨 <b>New Hotel</b>\n\nEnter the hotel <b>name</b>:',
-    airline:   '✈️ <b>New Airline</b>\n\nEnter the airline <b>name</b>:',
-    excursion: '🎯 <b>New Excursion</b>\n\nEnter the excursion <b>name</b>:',
+    city:         '🏙️ <b>New City</b>\n\nEnter the city <b>name</b>:',
+    hotel:        '🏨 <b>New Hotel</b>\n\nEnter the hotel <b>name</b>:',
+    airline:      '✈️ <b>New Airline</b>\n\nEnter the airline <b>name</b>:',
+    excursion:    '🎯 <b>New Excursion</b>\n\nEnter the excursion <b>name</b>:',
+    update_image: '',
   }
 
   await setConvState(chatId, { flow, step: 'name', data: {} })
@@ -516,4 +519,43 @@ export async function handleConvStep(
   }
 
   return false
+}
+
+// ─── Update trip image flow ───────────────────────────────────────────────────
+
+/** Called when user taps 📷 Change Image on a trip detail screen. */
+export async function startUpdateImageFlow(
+  chatId: number,
+  tripId: string,
+): Promise<void> {
+  await clearConvState(chatId)
+  await setConvState(chatId, { flow: 'update_image', step: 'photo', data: { tripId } })
+  await sendMessage(
+    chatId,
+    '📷 <b>Change Trip Image</b>\n\nSend the new photo for this trip.\n\n<i>Type /cancel to abort.</i>',
+  )
+}
+
+/**
+ * Called from the webhook when a photo arrives while in update_image flow.
+ * Downloads the photo, uploads to WordPress, updates the trip.
+ */
+export async function handleImageUpdate(
+  chatId:  number,
+  tripId:  string,
+  buffer:  Buffer,
+): Promise<void> {
+  await clearConvState(chatId)
+  try {
+    const { url } = await uploadTripImage(buffer, 'image/jpeg', `trip-${tripId}-${Date.now()}.jpg`)
+    const trip    = await getTrip(tripId)
+    await updateTrip(tripId, { ...trip, featured_image: url })
+    await sendKeyboard(
+      chatId,
+      `✅ <b>Image updated!</b>\n\nTrip: <b>${trip.title}</b>`,
+      backKb(`t:view:${tripId}`, '◀️ Back to Trip'),
+    )
+  } catch (e) {
+    await sendMessage(chatId, `❌ Failed to update image: ${String(e)}`)
+  }
 }

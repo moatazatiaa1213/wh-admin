@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MultiSelect } from '@/components/multi-select'
+import { MultiSelect }        from '@/components/multi-select'
+import { ImageUploadField }   from '@/components/image-upload-field'
 import { DatePicker } from '@/components/date-picker'
 import type { Trip, City, Hotel, Airline, Excursion } from '@/lib/types'
 
@@ -277,8 +278,11 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       <SectionHeader title="Featured Image" />
 
       <div className="space-y-1.5">
-        <Label className={lbl}>Image URL <span className="text-zinc-600">(optional)</span></Label>
-        <Input {...register('featured_image')} type="url" className={f} placeholder="https://…" />
+        <Label className={lbl}>Image <span className="text-zinc-600">(optional)</span></Label>
+        <ImageUploadField
+          value={watch('featured_image') ?? ''}
+          onChange={url => setValue('featured_image', url)}
+        />
         {errors.featured_image && <p className={err}>{errors.featured_image.message}</p>}
       </div>
 

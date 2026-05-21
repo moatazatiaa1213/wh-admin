@@ -35,13 +35,13 @@ export async function uploadTripImage(
   imageBuffer: Buffer,
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp',
   filename: string,
-): Promise<number> {
+): Promise<{ id: number; url: string }> {
   const base = process.env.WP_BASE_URL
   const res = await fetch(`${base}/wp-json/wp/v2/media`, {
     method: 'POST',
     headers: {
-      Authorization:       `Basic ${wpCredentials()}`,
-      'Content-Type':      mimeType,
+      Authorization:         `Basic ${wpCredentials()}`,
+      'Content-Type':        mimeType,
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
     body: imageBuffer as unknown as BodyInit,
@@ -51,8 +51,8 @@ export async function uploadTripImage(
     const err = await res.text()
     throw new Error(`WP media upload failed (${res.status}): ${err}`)
   }
-  const data = await res.json() as { id: number }
-  return data.id
+  const data = await res.json() as { id: number; source_url: string }
+  return { id: data.id, url: data.source_url }
 }
 
 function wpFetch(path: string, init?: RequestInit) {
