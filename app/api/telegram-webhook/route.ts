@@ -9,12 +9,9 @@ import { cacheGet, cacheSet, cacheInvalidate }  from '@/lib/cache'
 import { createTrip, uploadTripImage }          from '@/lib/wp-client'
 import {
   // state helpers
-  getConvState, setConvState, clearConvState,
-  pendingKey, convKey,
+  getConvState, clearConvState, pendingKey,
   // keyboards / formatters
-  mainMenuKb, mainMenuMsg,
-  tripsMenuKb, tripsMenuMsg,
-  tripConfirmKb,
+  mainMenuKb, mainMenuMsg, tripConfirmKb,
   // screens
   showMainMenu, showTripsMenu, showTripList, showTripDetail,
   showCitiesList, showHotelsList, showAirlinesList, showExcursionsList,
