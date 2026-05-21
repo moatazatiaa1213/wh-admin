@@ -283,7 +283,7 @@ export async function showCitiesList(chatId: number, msgId: number): Promise<voi
       items.map((c, i) => `${i + 1}. <b>${c.name}</b> · ${c.country} · ${c.location}`).join('\n')
     : '🏙️ <b>Cities</b>\n\nNo cities yet.'
   await editMessage(chatId, msgId, text,
-    entityListKb(items, 'c', 'c:new', 'm:cities'))
+    entityListKb(items, 'c', 'c:new', 'm:main'))
 }
 
 export async function showHotelsList(chatId: number, msgId: number): Promise<void> {
@@ -293,7 +293,7 @@ export async function showHotelsList(chatId: number, msgId: number): Promise<voi
       items.map((h, i) => `${i + 1}. <b>${h.name}</b> · ${'★'.repeat(h.stars)} · ${h.location}`).join('\n')
     : '🏨 <b>Hotels</b>\n\nNo hotels yet.'
   await editMessage(chatId, msgId, text,
-    entityListKb(items, 'h', 'h:new', 'm:hotels'))
+    entityListKb(items, 'h', 'h:new', 'm:main'))
 }
 
 export async function showAirlinesList(chatId: number, msgId: number): Promise<void> {
@@ -303,7 +303,7 @@ export async function showAirlinesList(chatId: number, msgId: number): Promise<v
       items.map((a, i) => `${i + 1}. <b>${a.name}</b> · ${a.baggage_allowance}`).join('\n')
     : '✈️ <b>Airlines</b>\n\nNo airlines yet.'
   await editMessage(chatId, msgId, text,
-    entityListKb(items, 'a', 'a:new', 'm:airlines'))
+    entityListKb(items, 'a', 'a:new', 'm:main'))
 }
 
 export async function showExcursionsList(chatId: number, msgId: number): Promise<void> {
@@ -313,7 +313,7 @@ export async function showExcursionsList(chatId: number, msgId: number): Promise
       items.map((e, i) => `${i + 1}. <b>${e.name}</b>\n   ${e.description.slice(0, 60)}${e.description.length > 60 ? '…' : ''}`).join('\n\n')
     : '🎯 <b>Excursions</b>\n\nNo excursions yet.'
   await editMessage(chatId, msgId, text,
-    entityListKb(items, 'e', 'e:new', 'm:excurs'))
+    entityListKb(items, 'e', 'e:new', 'm:main'))
 }
 
 // ─── Entity delete callbacks ──────────────────────────────────────────────────
