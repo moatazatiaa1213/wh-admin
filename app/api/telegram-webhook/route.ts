@@ -274,6 +274,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // ── Section shortcut commands ──────────────────────────────────────────────
+  if (text === '/trips') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🗺️ <b>Trips</b>\n\nChoose an action:', [
+      [{ text: '📋 List Trips',      callback_data: 't:list:0' }],
+      [{ text: '➕ New Trip via AI', callback_data: 't:new'    }],
+      [{ text: '⬅️ Main Menu',       callback_data: 'm:main'   }],
+    ])
+    void msgId
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '/cities') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🏙️ Loading cities…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showCitiesList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '/hotels') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🏨 Loading hotels…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showHotelsList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '/airlines') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '✈️ Loading airlines…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showAirlinesList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+  if (text === '/excursions') {
+    await clearConvState(chatId)
+    const msgId = await sendKeyboard(chatId, '🎯 Loading excursions…', [[{ text: '⏳', callback_data: 'm:main' }]])
+    await showExcursionsList(chatId, msgId)
+    return NextResponse.json({ ok: true })
+  }
+
   // ── Active conversation flow (city/hotel/airline/excursion create) ─────────
   const convState = await getConvState(chatId)
   if (convState && text) {
