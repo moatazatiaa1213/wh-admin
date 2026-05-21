@@ -11,13 +11,18 @@ import { TripBrochure } from '@/lib/trip-brochure'
 // ── Load logo once at module level ────────────────────────────────────────────
 
 function loadLogoBase64(): string | undefined {
-  try {
-    const logoPath = path.join(process.cwd(), 'public', 'wh-logo.png')
-    const buf      = fs.readFileSync(logoPath)
-    return `data:image/png;base64,${buf.toString('base64')}`
-  } catch {
-    return undefined   // logo file not found — brochure renders without it
+  const candidates: { file: string; mime: string }[] = [
+    { file: 'wh-logo.png',  mime: 'image/png'  },
+    { file: 'wh-logo.jpg',  mime: 'image/jpeg' },
+    { file: 'wh-logo.jpeg', mime: 'image/jpeg' },
+  ]
+  for (const { file, mime } of candidates) {
+    try {
+      const buf = fs.readFileSync(path.join(process.cwd(), 'public', file))
+      return `data:${mime};base64,${buf.toString('base64')}`
+    } catch { /* try next */ }
   }
+  return undefined   // no logo file found — brochure renders without it
 }
 
 const LOGO_BASE64 = loadLogoBase64()
