@@ -15,7 +15,7 @@ import { mockHotels } from '@/lib/mock/hotels'
 import { mockAirlines } from '@/lib/mock/airlines'
 import { mockExcursions } from '@/lib/mock/excursions'
 import { cacheGet, cacheSet, cacheInvalidate } from '@/lib/cache'
-import { Agent } from 'undici'
+import { Agent, fetch as undiciFetch, type RequestInit as UndiciRequestInit } from 'undici'
 
 const USE_MOCK = process.env.USE_MOCK_DATA === 'true'
 
@@ -86,7 +86,7 @@ export async function uploadTripImage(
   filename: string,
 ): Promise<{ id: number; url: string }> {
   const base = process.env.WP_BASE_URL
-  const res = await fetch(`${base}/wp-json/wp/v2/media`, {
+  const res = await undiciFetch(`${base}/wp-json/wp/v2/media`, {
     method: 'POST',
     headers: {
       Authorization:         `Basic ${wpCredentials()}`,
@@ -94,10 +94,9 @@ export async function uploadTripImage(
       'Content-Disposition': `attachment; filename="${filename}"`,
       'User-Agent':          WP_USER_AGENT,
     },
-    body: imageBuffer as unknown as BodyInit,
-    cache: 'no-store',
+    body: imageBuffer,
     ...(wpDispatcher ? { dispatcher: wpDispatcher } : {}),
-  } as RequestInit)
+  } as UndiciRequestInit)
   if (!res.ok) {
     const err = await res.text()
     throw new Error(`WP media upload failed (${res.status}): ${err}`)
@@ -106,20 +105,18 @@ export async function uploadTripImage(
   return { id: data.id, url: data.source_url }
 }
 
-function wpFetch(path: string, init?: RequestInit) {
+function wpFetch(path: string, init?: { method?: string; body?: string }): Promise<Response> {
   const base = process.env.WP_BASE_URL
 
-  return fetch(`${base}/wp-json/whholidays/v1${path}`, {
+  return undiciFetch(`${base}/wp-json/whholidays/v1${path}`, {
     ...init,
     headers: {
       Authorization: `Basic ${wpCredentials()}`,
       'Content-Type': 'application/json',
       'User-Agent': WP_USER_AGENT,
-      ...(init?.headers ?? {}),
     },
-    cache: 'no-store', // prevent Next.js Data Cache from caching WP responses
     ...(wpDispatcher ? { dispatcher: wpDispatcher } : {}),
-  } as RequestInit)
+  } as UndiciRequestInit) as unknown as Promise<Response>
 }
 
 /**
@@ -142,7 +139,7 @@ async function wpList<T>(path: string, cacheKey: string | null): Promise<T[]> {
       console.warn('[wp-client]', { endpoint: path, status: res.status, ts: Date.now() })
       return []
     }
-    const data: T[] = await res.json()
+    const data = await res.json() as T[]
 
     // 3. Populate cache
     if (cacheKey) await cacheSet(cacheKey, data)

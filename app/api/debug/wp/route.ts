@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Agent } from 'undici'
+import { Agent, fetch as undiciFetch, type RequestInit as UndiciRequestInit } from 'undici'
 
 // TEMPORARY diagnostic endpoint — remove after debugging.
 // Reports exactly what the server sees when it calls WordPress.
@@ -49,7 +49,7 @@ export async function GET() {
 
   try {
     const creds = Buffer.from(`${user}:${pass}`).toString('base64')
-    const res = await fetch(url, {
+    const res = await undiciFetch(url, {
       headers: {
         Authorization: `Basic ${creds}`,
         'Content-Type': 'application/json',
@@ -57,9 +57,8 @@ export async function GET() {
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
           '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
-      cache: 'no-store',
       ...(dispatcher ? { dispatcher } : {}),
-    } as RequestInit)
+    } as UndiciRequestInit)
 
     const text = await res.text()
     let count: number | string = 'n/a'
