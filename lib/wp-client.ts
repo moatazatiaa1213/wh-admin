@@ -20,6 +20,16 @@ const USE_MOCK = process.env.USE_MOCK_DATA === 'true'
 
 // ─── WP fetch helpers ───────────────────────────────────────────────────────
 
+/**
+ * Browser-like User-Agent.
+ * The WP host sits behind Cloudflare (via Bluehost), whose bot challenge
+ * returns 403 for default server UAs like "node"/empty. A real browser UA
+ * passes the challenge. Required on every request to whholidays.com.
+ */
+const WP_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
 function wpCredentials() {
   const user = process.env.WP_USERNAME
   const pass = process.env.WP_APP_PASSWORD
@@ -43,6 +53,7 @@ export async function uploadTripImage(
       Authorization:         `Basic ${wpCredentials()}`,
       'Content-Type':        mimeType,
       'Content-Disposition': `attachment; filename="${filename}"`,
+      'User-Agent':          WP_USER_AGENT,
     },
     body: imageBuffer as unknown as BodyInit,
     cache: 'no-store',
@@ -63,6 +74,7 @@ function wpFetch(path: string, init?: RequestInit) {
     headers: {
       Authorization: `Basic ${wpCredentials()}`,
       'Content-Type': 'application/json',
+      'User-Agent': WP_USER_AGENT,
       ...(init?.headers ?? {}),
     },
     cache: 'no-store', // prevent Next.js Data Cache from caching WP responses
