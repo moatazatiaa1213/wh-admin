@@ -79,7 +79,14 @@ export async function GET() {
       body_snippet: text.slice(0, 400),
     }
   } catch (e) {
-    report.result = { error: String(e) }
+    const err = e as { message?: string; cause?: unknown }
+    const cause = err.cause as { message?: string; code?: string; errno?: number } | undefined
+    report.result = {
+      error: String(e),
+      cause_message: cause?.message ?? '(none)',
+      cause_code: cause?.code ?? '(none)',
+      cause_full: cause ? JSON.stringify(cause, Object.getOwnPropertyNames(cause)) : '(none)',
+    }
   }
 
   return NextResponse.json(report, { status: 200 })
