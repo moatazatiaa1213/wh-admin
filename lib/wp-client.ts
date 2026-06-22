@@ -71,7 +71,10 @@ const WP_USER_AGENT =
 
 function wpCredentials() {
   const user = process.env.WP_USERNAME
-  const pass = process.env.WP_APP_PASSWORD
+  // WP application passwords are shown with spaces for readability, but the
+  // Bluehost origin does NOT strip them and rejects auth (401) when present.
+  // Strip them so write operations (create/edit/delete) authenticate correctly.
+  const pass = (process.env.WP_APP_PASSWORD ?? '').replace(/\s+/g, '')
   return Buffer.from(`${user}:${pass}`).toString('base64')
 }
 

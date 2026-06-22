@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Seed famous worldwide airlines into the WHHolidays library.
+# Uses the Bluehost origin-IP bypass + spaces-stripped app password.
+set -u
+
+RES="--resolve whholidays.com:443:50.6.34.45"
+UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+USER="moatazatiaa10@gmail.com"
+PASS="XFVlOQEtX1XMa0Fay8kuHfQK"
+B="https://whholidays.com/wp-json/whholidays/v1/airlines"
+
+# name|baggage_allowance
+AIRLINES=(
+"Emirates|30 kg"
+"Etihad Airways|30 kg"
+"Qatar Airways|30 kg"
+"Saudia|30 kg"
+"EgyptAir|23 kg"
+"Royal Jordanian|30 kg"
+"Gulf Air|30 kg"
+"Kuwait Airways|30 kg"
+"Oman Air|30 kg"
+"Turkish Airlines|30 kg"
+"Middle East Airlines|30 kg"
+"flydubai|20 kg"
+"Air Arabia|20 kg"
+"Lufthansa|23 kg"
+"British Airways|23 kg"
+"Air France|23 kg"
+"KLM Royal Dutch Airlines|23 kg"
+"Swiss International Air Lines|23 kg"
+"Austrian Airlines|23 kg"
+"Iberia|23 kg"
+"TAP Air Portugal|23 kg"
+"ITA Airways|23 kg"
+"Aegean Airlines|23 kg"
+"LOT Polish Airlines|23 kg"
+"Finnair|23 kg"
+"Scandinavian Airlines (SAS)|23 kg"
+"Brussels Airlines|23 kg"
+"Ryanair|Hand baggage only"
+"easyJet|Hand baggage only"
+"Wizz Air|Hand baggage only"
+"Vueling|Hand baggage only"
+"American Airlines|23 kg"
+"Delta Air Lines|23 kg"
+"United Airlines|23 kg"
+"Air Canada|23 kg"
+"JetBlue Airways|23 kg"
+"Alaska Airlines|23 kg"
+"WestJet|23 kg"
+"Singapore Airlines|30 kg"
+"Cathay Pacific|30 kg"
+"All Nippon Airways (ANA)|23 kg"
+"Japan Airlines|23 kg"
+"Korean Air|23 kg"
+"Asiana Airlines|23 kg"
+"China Southern Airlines|23 kg"
+"China Eastern Airlines|23 kg"
+"Air China|23 kg"
+"Thai Airways|30 kg"
+"Malaysia Airlines|30 kg"
+"Garuda Indonesia|30 kg"
+"Vietnam Airlines|23 kg"
+"Philippine Airlines|23 kg"
+"Air India|25 kg"
+"IndiGo|15 kg"
+"EVA Air|30 kg"
+"China Airlines|30 kg"
+"Hainan Airlines|23 kg"
+"Qantas|30 kg"
+"Air New Zealand|23 kg"
+"Virgin Australia|23 kg"
+"Ethiopian Airlines|23 kg"
+"Kenya Airways|23 kg"
+"South African Airways|23 kg"
+"Royal Air Maroc|23 kg"
+"Air Mauritius|23 kg"
+"RwandAir|23 kg"
+"Tunisair|23 kg"
+"LATAM Airlines|23 kg"
+"Avianca|23 kg"
+"Copa Airlines|23 kg"
+"Aeromexico|23 kg"
+"Aerolineas Argentinas|23 kg"
+"Aeroflot|23 kg"
+"Air Astana|20 kg"
+"Azerbaijan Airlines|30 kg"
+"Pegasus Airlines|20 kg"
+)
+
+ok=0; fail=0
+for row in "${AIRLINES[@]}"; do
+  name="${row%%|*}"
+  bag="${row##*|}"
+  body=$(printf '{"name":"%s","baggage_allowance":"%s"}' "$name" "$bag")
+  code=$(curl -s $RES -A "$UA" -u "$USER:$PASS" -o /dev/null -w "%{http_code}" \
+    -X POST "$B" -H "Content-Type: application/json" -d "$body")
+  if [ "$code" = "200" ] || [ "$code" = "201" ]; then
+    ok=$((ok+1))
+  else
+    fail=$((fail+1)); echo "FAIL ($code): $name"
+  fi
+done
+echo "---"
+echo "Created: $ok   Failed: $fail   Total attempted: ${#AIRLINES[@]}"
