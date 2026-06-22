@@ -17,6 +17,27 @@ define( 'WHH_NS', 'whholidays/v1' );
 // rewrite rules and caused single trip pages to 404. If single tour pages
 // ever 404 after a change, re-save Settings → Permalinks to regenerate them.
 
+// ─── Force the 'tour' post type to be publicly viewable ──────────────────────
+// Something (a Tour Master/theme setting or update) left the 'tour' post type
+// not publicly queryable, which makes WordPress 404 every single trip page.
+// We re-assert public + publicly_queryable + a /tour/ rewrite as Tour Master
+// registers the type, so single trip pages resolve again.
+add_filter( 'register_post_type_args', function ( $args, $post_type ) {
+    if ( $post_type === 'tour' ) {
+        $args['public']             = true;
+        $args['publicly_queryable'] = true;
+        $args['exclude_from_search'] = false;
+        if ( empty( $args['rewrite'] ) || $args['rewrite'] === true ) {
+            $args['rewrite'] = [ 'slug' => 'tour', 'with_front' => false ];
+        }
+        if ( ! isset( $args['has_archive'] ) ) {
+            $args['has_archive'] = true;
+        }
+        $args['query_var'] = true;
+    }
+    return $args;
+}, 99, 2 );
+
 // ─── Register all routes ──────────────────────────────────────────────────────
 
 add_action( 'rest_api_init', function () {
