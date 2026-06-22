@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { Agent } from 'undici'
 
 // TEMPORARY diagnostic endpoint — remove after debugging.
 // Reports exactly what the server sees when it calls WordPress.
@@ -18,11 +19,33 @@ export async function GET() {
       WP_USERNAME_present: !!user,
       WP_APP_PASSWORD_present: !!pass,
       USE_MOCK_DATA: useMock ?? '(undefined)',
+      WP_ORIGIN_IP: process.env.WP_ORIGIN_IP ?? '(undefined)',
     },
   }
 
   const url = `${base}/wp-json/whholidays/v1/tours`
   report.fetch_url = url
+
+  // Origin-IP bypass dispatcher (mirrors wp-client logic)
+  const originIp = process.env.WP_ORIGIN_IP
+  let dispatcher: Agent | undefined
+  if (originIp && base) {
+    const hostname = new URL(base).hostname
+    dispatcher = new Agent({
+      connect: {
+        servername: hostname,
+        rejectUnauthorized: true,
+        lookup: (
+          _h: string,
+          opts: { all?: boolean },
+          cb: (e: Error | null, a: string | { address: string; family: number }[], f?: number) => void,
+        ) => {
+          if (opts?.all) cb(null, [{ address: originIp, family: 4 }])
+          else cb(null, originIp, 4)
+        },
+      },
+    })
+  }
 
   try {
     const creds = Buffer.from(`${user}:${pass}`).toString('base64')
@@ -35,7 +58,8 @@ export async function GET() {
           '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
       cache: 'no-store',
-    })
+      ...(dispatcher ? { dispatcher } : {}),
+    } as RequestInit)
 
     const text = await res.text()
     let count: number | string = 'n/a'

@@ -15,8 +15,47 @@ import { mockHotels } from '@/lib/mock/hotels'
 import { mockAirlines } from '@/lib/mock/airlines'
 import { mockExcursions } from '@/lib/mock/excursions'
 import { cacheGet, cacheSet, cacheInvalidate } from '@/lib/cache'
+import { Agent } from 'undici'
 
 const USE_MOCK = process.env.USE_MOCK_DATA === 'true'
+
+/**
+ * Cloudflare bypass.
+ *
+ * whholidays.com sits behind Cloudflare (via Bluehost), whose bot challenge
+ * 403s requests from Vercel's datacenter IPs — no header/UA trick gets past
+ * the JS challenge. But the Bluehost ORIGIN (cpanel/mail/ftp subdomains all
+ * resolve to it) is NOT proxied and serves WordPress directly over Apache.
+ *
+ * When WP_ORIGIN_IP is set, we route WP requests straight to that IP while
+ * keeping SNI + Host = whholidays.com, so the TLS cert validates and
+ * WordPress sees its canonical host (no redirect). This skips Cloudflare
+ * entirely. Remove the env var to fall back to normal DNS.
+ */
+const WP_ORIGIN_IP = process.env.WP_ORIGIN_IP
+
+const wpDispatcher: Agent | undefined = (() => {
+  if (!WP_ORIGIN_IP) return undefined
+  let hostname = ''
+  try { hostname = new URL(process.env.WP_BASE_URL ?? '').hostname } catch { return undefined }
+  if (!hostname) return undefined
+
+  return new Agent({
+    connect: {
+      servername: hostname,        // SNI → origin serves the whholidays.com cert
+      rejectUnauthorized: true,    // still validate the cert
+      // Force every connection through this dispatcher to the origin IP
+      lookup: (
+        _host: string,
+        options: { all?: boolean },
+        cb: (err: Error | null, address: string | { address: string; family: number }[], family?: number) => void,
+      ) => {
+        if (options?.all) cb(null, [{ address: WP_ORIGIN_IP, family: 4 }])
+        else cb(null, WP_ORIGIN_IP, 4)
+      },
+    },
+  })
+})()
 
 // ─── WP fetch helpers ───────────────────────────────────────────────────────
 
@@ -57,7 +96,8 @@ export async function uploadTripImage(
     },
     body: imageBuffer as unknown as BodyInit,
     cache: 'no-store',
-  })
+    ...(wpDispatcher ? { dispatcher: wpDispatcher } : {}),
+  } as RequestInit)
   if (!res.ok) {
     const err = await res.text()
     throw new Error(`WP media upload failed (${res.status}): ${err}`)
@@ -78,7 +118,8 @@ function wpFetch(path: string, init?: RequestInit) {
       ...(init?.headers ?? {}),
     },
     cache: 'no-store', // prevent Next.js Data Cache from caching WP responses
-  })
+    ...(wpDispatcher ? { dispatcher: wpDispatcher } : {}),
+  } as RequestInit)
 }
 
 /**
