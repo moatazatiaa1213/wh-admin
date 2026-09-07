@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,6 +20,7 @@ import {
 import { MultiSelect }        from '@/components/multi-select'
 import { ImageUploadField }   from '@/components/image-upload-field'
 import { DatePicker } from '@/components/date-picker'
+import { formatBaggage } from '@/lib/format-baggage'
 import type { Trip, City, Hotel, Airline, Excursion } from '@/lib/types'
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -104,19 +105,29 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
     },
   })
 
-  // ── Auto-calculate duration when dates change ─────────────────────────────
-  const travelDate = watch('travel_date')
-  const endDate    = watch('end_date')
+  // ── Nights per selected city — the source of truth for trip duration ──────
+  // (travel_date/end_date are independently editable and no longer reconciled
+  // against duration; see plan notes on this tradeoff)
+  const [cityNights, setCityNights] = useState<Record<string, number>>(trip?.city_nights ?? {})
+  const cityIds = watch('city_ids')
 
+  // Keep cityNights in sync with the selected city list: prune removed
+  // cities, default newly-added ones to 1 night.
   useEffect(() => {
-    if (!travelDate || !endDate) return
-    const start = new Date(travelDate)
-    const end   = new Date(endDate)
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return
-    const nights = Math.round((end.getTime() - start.getTime()) / 86_400_000)
+    setCityNights(prev => {
+      const next: Record<string, number> = {}
+      for (const id of cityIds) next[id] = prev[id] ?? 1
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cityIds.join(',')])
+
+  // Duration is always the sum of per-city nights (+1 day)
+  useEffect(() => {
+    const nights = Object.values(cityNights).reduce((a, b) => a + b, 0)
     setValue('duration_nights', nights)
-    setValue('duration_days',   nights + 1)
-  }, [travelDate, endDate, setValue])
+    setValue('duration_days', nights + 1)
+  }, [cityNights, setValue])
 
   const mutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
@@ -125,7 +136,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, city_nights: cityNights }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -224,7 +235,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={lbl}>Duration (Days) <span className="text-zinc-600 font-normal">· auto</span></Label>
+          <Label className={lbl}>Duration (Days) <span className="text-zinc-600 font-normal">· auto (from city nights)</span></Label>
           <Input
             {...register('duration_days')}
             type="number"
@@ -234,7 +245,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           />
         </div>
         <div className="space-y-1.5">
-          <Label className={lbl}>Duration (Nights) <span className="text-zinc-600 font-normal">· auto</span></Label>
+          <Label className={lbl}>Duration (Nights) <span className="text-zinc-600 font-normal">· auto (from city nights)</span></Label>
           <Input
             {...register('duration_nights')}
             type="number"
@@ -292,7 +303,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       <div className="space-y-1.5">
         <Label className={lbl}>Select Cities</Label>
         <MultiSelect
-          options={cities.map(c => ({ id: c.id, label: c.name, sublabel: `${c.country} · ${c.location}` }))}
+          options={cities.map(c => ({ id: c.id, label: c.name, sublabel: `${c.country} · ${c.location}`, imageUrl: c.photo }))}
           selected={watch('city_ids')}
           onChange={ids => setValue('city_ids', ids)}
           placeholder="Select cities…"
@@ -300,13 +311,37 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
         />
       </div>
 
+      {cityIds.length > 0 && (
+        <div className="space-y-2">
+          <Label className={lbl}>Nights per City</Label>
+          {cityIds.map(id => {
+            const city = cities.find(c => c.id === id)
+            return (
+              <div key={id} className="flex items-center justify-between gap-3 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-2">
+                <span className="text-sm text-zinc-300">{city?.name ?? id}</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    value={cityNights[id] ?? 1}
+                    onChange={e => setCityNights(prev => ({ ...prev, [id]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                    className="w-20 bg-[#111111] border border-[#1c1c1c] rounded px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  <span className="text-xs text-zinc-500">nights</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* ── Hotels ── */}
       <SectionHeader title="Hotels" />
 
       <div className="space-y-1.5">
         <Label className={lbl}>Select Hotels</Label>
         <MultiSelect
-          options={hotels.map(h => ({ id: h.id, label: h.name, sublabel: `${'★'.repeat(h.stars)} · ${h.location}` }))}
+          options={hotels.map(h => ({ id: h.id, label: h.name, sublabel: `${'★'.repeat(h.stars)} · ${h.location}`, imageUrl: h.photo }))}
           selected={watch('hotel_ids')}
           onChange={ids => setValue('hotel_ids', ids)}
           placeholder="Select hotels…"
@@ -320,7 +355,12 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       <div className="space-y-1.5">
         <Label className={lbl}>Select Airlines</Label>
         <MultiSelect
-          options={airlines.map(a => ({ id: a.id, label: a.name, sublabel: a.baggage_allowance }))}
+          options={airlines.map(a => ({
+            id: a.id,
+            label: a.name,
+            sublabel: [formatBaggage(a) || null, a.type ? `(${a.type})` : null].filter(Boolean).join(' · ') || undefined,
+            imageUrl: a.photo,
+          }))}
           selected={watch('airline_ids')}
           onChange={ids => setValue('airline_ids', ids)}
           placeholder="Select airlines…"

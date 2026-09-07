@@ -5,6 +5,8 @@ export interface City {
   name: string
   country: string
   location: string
+  photo?: string
+  map_url?: string
 }
 
 export interface Hotel {
@@ -14,13 +16,17 @@ export interface Hotel {
   location: string
   photo?: string
   website?: string
+  map_url?: string
 }
 
 export interface Airline {
   id: string
   name: string
   photo?: string
-  baggage_allowance: string
+  type?: 'domestic' | 'international'
+  checked_bags_count?: number
+  checked_bags_weight_kg?: number
+  carry_on_weight_kg?: number
 }
 
 export interface Excursion {
@@ -61,6 +67,10 @@ export interface Trip {
   hotel_ids: string[]
   airline_ids: string[]
   excursion_ids: string[]
+
+  // Nights stayed per city (city_id -> nights); duration_nights/duration_days
+  // are derived from this as the source of truth (see components/trip-form.tsx)
+  city_nights: Record<string, number>
 }
 
 export type TripInput = Omit<Trip, 'id' | 'created_at'> & {

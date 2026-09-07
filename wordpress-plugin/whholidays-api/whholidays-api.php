@@ -10,33 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'WHH_NS', 'whholidays/v1' );
 
-// NOTE: We deliberately do NOT flush_rewrite_rules() on activation.
-// This plugin registers no post types or rewrite rules of its own — REST
-// routes don't need a flush. Flushing during activation (before the theme /
-// Tour Master register the 'tour' post type) wiped the tour single-page
-// rewrite rules and caused single trip pages to 404. If single tour pages
-// ever 404 after a change, re-save Settings → Permalinks to regenerate them.
-
-// ─── Force the 'tour' post type to be publicly viewable ──────────────────────
-// Something (a Tour Master/theme setting or update) left the 'tour' post type
-// not publicly queryable, which makes WordPress 404 every single trip page.
-// We re-assert public + publicly_queryable + a /tour/ rewrite as Tour Master
-// registers the type, so single trip pages resolve again.
-add_filter( 'register_post_type_args', function ( $args, $post_type ) {
-    if ( $post_type === 'tour' ) {
-        $args['public']             = true;
-        $args['publicly_queryable'] = true;
-        $args['exclude_from_search'] = false;
-        if ( empty( $args['rewrite'] ) || $args['rewrite'] === true ) {
-            $args['rewrite'] = [ 'slug' => 'tour', 'with_front' => false ];
-        }
-        if ( ! isset( $args['has_archive'] ) ) {
-            $args['has_archive'] = true;
-        }
-        $args['query_var'] = true;
-    }
-    return $args;
-}, 99, 2 );
+// Flush rewrite rules on activation so REST routes register immediately.
+register_activation_hook( __FILE__, function () { flush_rewrite_rules(); } );
 
 // ─── Register all routes ──────────────────────────────────────────────────────
 
@@ -223,6 +198,7 @@ function whh_format_tour( WP_Post $post ): array {
         'hotel_ids'       => whh_meta_json( $id, 'whh-hotel-ids' ),
         'airline_ids'     => whh_meta_json( $id, 'whh-airline-ids' ),
         'excursion_ids'   => whh_meta_json( $id, 'whh-excursion-ids' ),
+        'city_nights'     => whh_meta_json( $id, 'whh-city-nights' ),
     ];
 }
 
@@ -335,6 +311,7 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
     if ( isset( $data['hotel_ids'] ) )     update_post_meta( $post_id, 'whh-hotel-ids',     wp_json_encode( $data['hotel_ids'] ) );
     if ( isset( $data['airline_ids'] ) )   update_post_meta( $post_id, 'whh-airline-ids',   wp_json_encode( $data['airline_ids'] ) );
     if ( isset( $data['excursion_ids'] ) ) update_post_meta( $post_id, 'whh-excursion-ids', wp_json_encode( $data['excursion_ids'] ) );
+    if ( isset( $data['city_nights'] ) )   update_post_meta( $post_id, 'whh-city-nights',   wp_json_encode( $data['city_nights'] ) );
 }
 
 // ─── Bookings: read from tourmaster_record table ──────────────────────────────
@@ -779,6 +756,8 @@ function whh_print_styles(): void {
         font-size: 14px; color: #333; line-height: 1.5;
     }
     .whh-lib-sub { color: #888; font-size: 12px; display: block; margin-top: 3px; }
+    .whh-lib-item-media, .whh-row-media { display: flex; align-items: center; gap: 12px; }
+    .whh-lib-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
 
     /* Sidebar */
     .whh-sidebar-box {
@@ -879,7 +858,7 @@ function whh_shortcode_trips( array $atts ): string {
         $title = esc_html( whh_clean_title( $t['title'] ) );
 
         // Badges overlaid on the image
-        $done_badge   = $done ? '<span class="whh-badge-completed">Completed</span>' : '';
+        $done_badge   = $done ? '<span class="whh-badge-completed">Fully Booked</span>' : '';
         $nights_badge = ( $t['duration_nights'] > 0 )
             ? '<span class="whh-nights-badge">' . (int) $t['duration_nights'] . ' Nights</span>'
             : '';
@@ -955,9 +934,11 @@ function whh_render_detail( array $t ): string {
         $date_label = $s . $e;
     }
 
-    $adult = $t['price_adult'] ? number_format( (float)$t['price_adult'] ) : '—';
-    $child = $t['price_child'] ? number_format( (float)$t['price_child'] ) : '—';
-    $dur   = $t['duration_days'] ? $t['duration_days'] . 'D / ' . $t['duration_nights'] . 'N' : '';
+    $adult  = $t['price_adult']  ? number_format( (float)$t['price_adult'] )  : '—';
+    $child  = $t['price_child']  ? number_format( (float)$t['price_child'] )  : '—';
+    $single = $t['single_rate']  ? number_format( (float)$t['single_rate'] )  : '—';
+    $dep    = $t['deposit']      ? number_format( (float)$t['deposit'] )      : '—';
+    $dur   = $t['duration_days'] ? $t['duration_days'] . ' Days / ' . $t['duration_nights'] . ' Nights' : '';
 
     // Try to find a contact page, fallback to mailto
     $contact_page = get_page_by_path('contact');
@@ -1001,10 +982,18 @@ function whh_render_detail( array $t ): string {
                 <?php if ( ! empty( $cities ) ): ?>
                 <div class="whh-section">
                     <h2>🌍 Destinations</h2>
-                    <?php foreach ( $cities as $i => $c ): ?>
-                    <div class="whh-row">
-                        <strong>Destination <?php echo $i + 1; ?></strong>
-                        <span><?php echo esc_html( $c['name'] . ', ' . $c['country'] ); ?></span>
+                    <?php foreach ( $cities as $i => $c ):
+                        $c_name = esc_html( $c['name'] . ', ' . $c['country'] );
+                        $c_map  = ! empty( $c['map_url'] ) ? esc_url( $c['map_url'] ) : '';
+                    ?>
+                    <div class="whh-row whh-row-media">
+                        <div class="whh-row-media">
+                            <?php if ( ! empty( $c['photo'] ) ): ?>
+                                <img src="<?php echo esc_url( $c['photo'] ); ?>" alt="<?php echo esc_attr( $c['name'] ); ?>" class="whh-lib-thumb">
+                            <?php endif; ?>
+                            <strong>Destination <?php echo $i + 1; ?></strong>
+                        </div>
+                        <span><?php echo $c_map ? "<a href='{$c_map}' target='_blank' rel='noopener'>{$c_name}</a>" : $c_name; ?></span>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -1013,10 +1002,18 @@ function whh_render_detail( array $t ): string {
                 <?php if ( ! empty( $hotels ) ): ?>
                 <div class="whh-section">
                     <h2>🏨 Hotels</h2>
-                    <?php foreach ( $hotels as $i => $h ): ?>
-                    <div class="whh-lib-item">
-                        <strong>Hotel <?php echo $i + 1; ?> &nbsp; <?php echo esc_html( $h['name'] ); ?></strong>
-                        <?php if ( ! empty( $h['stars'] ) ): ?><span class="whh-lib-sub"><?php echo str_repeat('★', (int)$h['stars']); ?> Stars</span><?php endif; ?>
+                    <?php foreach ( $hotels as $i => $h ):
+                        $h_name = esc_html( $h['name'] );
+                        $h_map  = ! empty( $h['map_url'] ) ? esc_url( $h['map_url'] ) : '';
+                    ?>
+                    <div class="whh-lib-item whh-lib-item-media">
+                        <?php if ( ! empty( $h['photo'] ) ): ?>
+                            <img src="<?php echo esc_url( $h['photo'] ); ?>" alt="<?php echo esc_attr( $h['name'] ); ?>" class="whh-lib-thumb">
+                        <?php endif; ?>
+                        <div>
+                            <strong>Hotel <?php echo $i + 1; ?> &nbsp; <?php echo $h_map ? "<a href='{$h_map}' target='_blank' rel='noopener'>{$h_name}</a>" : $h_name; ?></strong>
+                            <?php if ( ! empty( $h['stars'] ) ): ?><span class="whh-lib-sub"><?php echo str_repeat('★', (int)$h['stars']); ?></span><?php endif; ?>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -1025,10 +1022,25 @@ function whh_render_detail( array $t ): string {
                 <?php if ( ! empty( $airlines ) ): ?>
                 <div class="whh-section">
                     <h2>✈️ Airlines</h2>
-                    <?php foreach ( $airlines as $a ): ?>
-                    <div class="whh-lib-item">
-                        <strong><?php echo esc_html( $a['name'] ); ?></strong>
-                        <?php if ( ! empty( $a['baggage_allowance'] ) ): ?><span class="whh-lib-sub">Baggage allowance: <?php echo esc_html( $a['baggage_allowance'] ); ?></span><?php endif; ?>
+                    <?php foreach ( $airlines as $a ):
+                        $baggage_parts = [];
+                        if ( ! empty( $a['checked_bags_count'] ) && ! empty( $a['checked_bags_weight_kg'] ) ) {
+                            $baggage_parts[] = $a['checked_bags_count'] . ' × ' . $a['checked_bags_weight_kg'] . 'kg checked';
+                        } elseif ( ! empty( $a['checked_bags_weight_kg'] ) ) {
+                            $baggage_parts[] = $a['checked_bags_weight_kg'] . 'kg checked';
+                        }
+                        if ( ! empty( $a['carry_on_weight_kg'] ) ) $baggage_parts[] = $a['carry_on_weight_kg'] . 'kg carry-on';
+                        if ( ! empty( $a['type'] ) ) $baggage_parts[] = ( $a['type'] === 'international' ? 'International flight' : 'Domestic flight' );
+                        $baggage_str = implode( ', ', $baggage_parts );
+                    ?>
+                    <div class="whh-lib-item whh-lib-item-media">
+                        <?php if ( ! empty( $a['photo'] ) ): ?>
+                            <img src="<?php echo esc_url( $a['photo'] ); ?>" alt="<?php echo esc_attr( $a['name'] ); ?>" class="whh-lib-thumb">
+                        <?php endif; ?>
+                        <div>
+                            <strong><?php echo esc_html( $a['name'] ); ?></strong>
+                            <?php if ( $baggage_str ): ?><span class="whh-lib-sub"><?php echo esc_html( $baggage_str ); ?></span><?php endif; ?>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -1079,6 +1091,20 @@ function whh_render_detail( array $t ): string {
                             <div class="cur">EGP</div>
                             <div class="amt"><?php echo $child; ?></div>
                         </div>
+                        <?php if ( $t['single_rate'] > 0 ): ?>
+                        <div class="whh-price-box">
+                            <div class="lbl">Single Rate</div>
+                            <div class="cur">EGP</div>
+                            <div class="amt"><?php echo $single; ?></div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ( $t['deposit'] > 0 ): ?>
+                        <div class="whh-price-box">
+                            <div class="lbl">Deposit</div>
+                            <div class="cur">EGP</div>
+                            <div class="amt"><?php echo $dep; ?></div>
+                        </div>
+                        <?php endif; ?>
                     </div>
 
                     <a href="<?php echo $contact_url; ?>" class="whh-contact-btn">

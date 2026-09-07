@@ -7,6 +7,7 @@ export interface SelectOption {
   id: string
   label: string
   sublabel?: string
+  imageUrl?: string
 }
 
 interface MultiSelectProps {
@@ -70,8 +71,12 @@ export function MultiSelect({
           {selectedOptions.map(opt => (
             <span
               key={opt.id}
-              className="inline-flex items-center gap-1 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs rounded-md px-2 py-1"
+              className="inline-flex items-center gap-1.5 bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs rounded-md px-2 py-1"
             >
+              {opt.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={opt.imageUrl} alt="" className="w-4 h-4 rounded-full object-cover flex-shrink-0 bg-zinc-800" />
+              )}
               {opt.label}
               <button
                 type="button"
@@ -141,6 +146,10 @@ export function MultiSelect({
                   >
                     {selected.includes(opt.id) && <Check size={10} className="text-white" />}
                   </div>
+                  {opt.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={opt.imageUrl} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0 bg-zinc-800" />
+                  )}
                   <div>
                     <p className="text-sm text-zinc-200">{opt.label}</p>
                     {opt.sublabel && <p className="text-[11px] text-zinc-500">{opt.sublabel}</p>}

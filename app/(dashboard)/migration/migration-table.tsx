@@ -6,6 +6,7 @@ import { DatePicker } from '@/components/date-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckCircle, Loader2, AlertCircle } from 'lucide-react'
+import { formatBaggage } from '@/lib/format-baggage'
 import type { Trip, City, Hotel, Airline, Excursion } from '@/lib/types'
 
 interface TripState {
@@ -162,7 +163,7 @@ export function MigrationTable({ trips, cities, hotels, airlines, excursions }: 
                 <div className="space-y-1">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Airlines</p>
                   <MultiSelect
-                    options={airlines.map(a => ({ id: a.id, label: a.name, sublabel: a.baggage_allowance }))}
+                    options={airlines.map(a => ({ id: a.id, label: a.name, sublabel: formatBaggage(a), imageUrl: a.photo }))}
                     selected={s.airline_ids}
                     onChange={ids => update(trip.id, { airline_ids: ids })}
                     placeholder="Select airlines…"

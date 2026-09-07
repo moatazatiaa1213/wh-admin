@@ -26,6 +26,7 @@ import {
 } from '@/lib/wp-client'
 import type { InlineKeyboard } from '@/lib/telegram'
 import type { Trip }           from '@/lib/types'
+import { formatBaggage }       from '@/lib/format-baggage'
 
 // ─── Conversation state ───────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ export function tripDetailKb(id: string, status: string, avail: string): InlineK
     : { text: '✅ Publish',      callback_data: `t:pub:${id}` }
   const availBtn = avail === 'completed'
     ? { text: '🟢 Set Available',   callback_data: `t:avl:${id}` }
-    : { text: '🏁 Mark Completed',  callback_data: `t:com:${id}` }
+    : { text: '🏁 Mark Fully Booked',  callback_data: `t:com:${id}` }
   return [
     [statusBtn],
     [availBtn],
@@ -167,8 +168,9 @@ export function tripListMsg(trips: Trip[], page: number, total: number): string 
   const lines = trips.map((t, i) => {
     const num    = start + i + 1
     const status = t.status === 'published' ? '✅ Published' : '📝 Draft'
-    const avail  = t.availability === 'available' ? '🟢' : '🏁'
-    return `${num}. <b>${t.title}</b>\n   ${status} · ${avail} ${t.availability} · ${t.destination}`
+    const avail      = t.availability === 'available' ? '🟢' : '🏁'
+    const availLabel = t.availability === 'available' ? 'Available' : 'Fully Booked'
+    return `${num}. <b>${t.title}</b>\n   ${status} · ${avail} ${availLabel} · ${t.destination}`
   }).join('\n\n')
 
   return (
@@ -181,14 +183,14 @@ export function tripListMsg(trips: Trip[], page: number, total: number): string 
 export function tripDetailMsg(t: Trip): string {
   const price  = (v: number) => v ? `$${Number(v).toLocaleString()}` : '—'
   const status = t.status === 'published' ? '✅ Published' : '📝 Draft'
-  const avail  = t.availability === 'available' ? '🟢 Available' : '🏁 Completed'
+  const avail  = t.availability === 'available' ? '🟢 Available' : '🏁 Fully Booked'
 
   return [
     `🗺️ <b>${t.title}</b>`,
     '',
     `📍 <b>Destination:</b> ${t.destination}`,
     `📅 <b>Dates:</b> ${t.travel_date} → ${t.end_date}`,
-    `⏱️ <b>Duration:</b> ${t.duration_nights}N / ${t.duration_days}D`,
+    `⏱️ <b>Duration:</b> ${t.duration_days} Days / ${t.duration_nights} Nights`,
     `💰 <b>Adult:</b> ${price(t.price_adult)} | <b>Child:</b> ${price(t.price_child)}`,
     `📌 <b>Status:</b> ${status}`,
     `🔄 <b>Availability:</b> ${avail}`,
@@ -302,7 +304,7 @@ export async function showAirlinesList(chatId: number, msgId: number): Promise<v
   const items = await getAirlines()
   const text  = items.length
     ? '✈️ <b>Airlines</b> (' + items.length + ')\n\n' +
-      items.map((a, i) => `${i + 1}. <b>${a.name}</b> · ${a.baggage_allowance}`).join('\n')
+      items.map((a, i) => `${i + 1}. <b>${a.name}</b> · ${formatBaggage(a) || '—'}`).join('\n')
     : '✈️ <b>Airlines</b>\n\nNo airlines yet.'
   await editMessage(chatId, msgId, text,
     entityListKb(items, 'a', 'a:new', 'm:main'))
@@ -475,17 +477,37 @@ export async function handleConvStep(
   // ── Airline flow ───────────────────────────────────────────────────────────
   if (flow === 'airline') {
     if (step === 'name') {
-      await setConvState(chatId, { flow, step: 'baggage', data: { ...data, name: input } })
-      await sendMessage(chatId, `Airline: <b>${input}</b>\n\nEnter the <b>baggage allowance</b> (e.g. "23kg + 7kg carry-on"):`)
+      await setConvState(chatId, { flow, step: 'checked_count', data: { ...data, name: input } })
+      await sendMessage(chatId, `Airline: <b>${input}</b>\n\nEnter the number of <b>checked bags</b> allowed (or 0 if none):`)
       return false
     }
-    if (step === 'baggage') {
+    if (step === 'checked_count') {
+      const count = Math.max(0, parseInt(input) || 0)
+      await setConvState(chatId, { flow, step: 'checked_weight', data: { ...data, checked_bags_count: String(count) } })
+      await sendMessage(chatId, `Enter the <b>checked bag weight</b> in kg (or 0 if not applicable):`)
+      return false
+    }
+    if (step === 'checked_weight') {
+      const weight = Math.max(0, parseFloat(input) || 0)
+      await setConvState(chatId, { flow, step: 'carry_on_weight', data: { ...data, checked_bags_weight_kg: String(weight) } })
+      await sendMessage(chatId, `Enter the <b>carry-on weight</b> allowed in kg (or 0 if not applicable):`)
+      return false
+    }
+    if (step === 'carry_on_weight') {
       await clearConvState(chatId)
+      const carryOn = Math.max(0, parseFloat(input) || 0)
+      const checkedCount  = parseInt(data.checked_bags_count) || 0
+      const checkedWeight = parseFloat(data.checked_bags_weight_kg) || 0
       try {
-        await createAirline({ name: data.name, baggage_allowance: input })
+        const airline = await createAirline({
+          name: data.name,
+          checked_bags_count: checkedCount || undefined,
+          checked_bags_weight_kg: checkedWeight || undefined,
+          carry_on_weight_kg: carryOn || undefined,
+        })
         await sendKeyboard(
           chatId,
-          `✅ <b>Airline created!</b>\n\n<b>${data.name}</b> · ${input}`,
+          `✅ <b>Airline created!</b>\n\n<b>${data.name}</b> · ${formatBaggage(airline) || 'No baggage details'}`,
           backKb('m:airlines', '✈️ Back to Airlines'),
         )
       } catch (e) {

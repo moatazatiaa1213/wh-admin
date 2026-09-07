@@ -1,15 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 const MONTHS = [
   'January','February','March','April','May','June',
   'July','August','September','October','November','December',
 ]
-const WEEKDAYS = ['Su','Mo','Tu','We','Th','Fr','Sa']
 
 interface DatePickerProps {
   value?: string            // yyyy-MM-dd
@@ -18,147 +15,106 @@ interface DatePickerProps {
   disabled?: boolean
 }
 
+function daysInMonth(year: number, month1to12: number): number {
+  return new Date(year, month1to12, 0).getDate()
+}
+
+const selectClass = cn(
+  'h-10 rounded-md border border-[#1c1c1c] bg-[#09090b] px-2 text-sm text-zinc-50',
+  'hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500',
+  'disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer',
+)
+
 export function DatePicker({
   value,
   onChange,
-  placeholder = 'Pick a date',
   disabled,
 }: DatePickerProps) {
-  const today = new Date()
-  const selected = value ? new Date(value + 'T00:00:00') : null
+  const currentYear = new Date().getFullYear()
+  const years = React.useMemo(
+    () => Array.from({ length: 7 }, (_, i) => currentYear - 1 + i), // currentYear-1 .. currentYear+5
+    [currentYear],
+  )
 
-  const [open, setOpen]           = React.useState(false)
-  const [viewMonth, setViewMonth] = React.useState(selected?.getMonth()    ?? today.getMonth())
-  const [viewYear,  setViewYear]  = React.useState(selected?.getFullYear() ?? today.getFullYear())
+  const [day, setDay]     = React.useState<number | ''>('')
+  const [month, setMonth] = React.useState<number | ''>('')   // 1-12
+  const [year, setYear]   = React.useState<number | ''>('')
 
-  // Sync view when value changes externally
+  // Parse an incoming ISO value (including on mount, and whenever it changes externally)
   React.useEffect(() => {
-    if (selected) {
-      setViewMonth(selected.getMonth())
-      setViewYear(selected.getFullYear())
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!value) { setDay(''); setMonth(''); setYear(''); return }
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    if (!m) return
+    setYear(parseInt(m[1], 10))
+    setMonth(parseInt(m[2], 10))
+    setDay(parseInt(m[3], 10))
   }, [value])
 
-  function prevMonth() {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1) }
-    else setViewMonth(m => m - 1)
-  }
-  function nextMonth() {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1) }
-    else setViewMonth(m => m + 1)
-  }
-
-  function handleDayClick(day: number) {
-    const iso = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  function emit(nextDay: number | '', nextMonth: number | '', nextYear: number | '') {
+    if (nextDay === '' || nextMonth === '' || nextYear === '') return
+    const clampedDay = Math.min(nextDay, daysInMonth(nextYear, nextMonth))
+    const iso = `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`
     onChange(iso)
-    setOpen(false)
   }
 
-  // Build calendar cells
-  const daysInMonth  = new Date(viewYear, viewMonth + 1, 0).getDate()
-  const firstWeekday = new Date(viewYear, viewMonth, 1).getDay()
-  const cells: (number | null)[] = [
-    ...Array(firstWeekday).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ]
-  while (cells.length % 7 !== 0) cells.push(null)
+  function handleDayChange(v: string) {
+    const next = v === '' ? '' : parseInt(v, 10)
+    setDay(next)
+    emit(next, month, year)
+  }
+  function handleMonthChange(v: string) {
+    const next = v === '' ? '' : parseInt(v, 10)
+    setMonth(next)
+    // Re-clamp day against the new month's length
+    const clampedDay = day !== '' && next !== '' ? Math.min(day, daysInMonth(year || currentYear, next)) : day
+    if (clampedDay !== day) setDay(clampedDay)
+    emit(clampedDay, next, year)
+  }
+  function handleYearChange(v: string) {
+    const next = v === '' ? '' : parseInt(v, 10)
+    setYear(next)
+    const clampedDay = day !== '' && month !== '' && next !== '' ? Math.min(day, daysInMonth(next, month)) : day
+    if (clampedDay !== day) setDay(clampedDay)
+    emit(clampedDay, month, next)
+  }
 
-  const displayLabel = selected
-    ? selected.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    : null
+  const maxDay = (year !== '' && month !== '') ? daysInMonth(year, month) : 31
+  const dayOptions = Array.from({ length: maxDay }, (_, i) => i + 1)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          className={cn(
-            'flex h-10 w-full items-center justify-between rounded-md border border-[#1c1c1c]',
-            'bg-[#09090b] px-3 py-2 text-sm text-left transition-colors',
-            'hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-sky-500',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            displayLabel ? 'text-zinc-50' : 'text-zinc-500',
-          )}
-        >
-          {displayLabel ?? placeholder}
-          <CalendarIcon size={14} className="shrink-0 text-zinc-500" />
-        </button>
-      </PopoverTrigger>
+    <div className="flex gap-2">
+      <select
+        aria-label="Day"
+        value={day}
+        onChange={e => handleDayChange(e.target.value)}
+        disabled={disabled}
+        className={cn(selectClass, 'w-[72px]')}
+      >
+        <option value="" disabled>Day</option>
+        {dayOptions.map(d => <option key={d} value={d}>{d}</option>)}
+      </select>
 
-      <PopoverContent className="w-72 p-4">
-        {/* ── Month / Year header ── */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            type="button"
-            onClick={prevMonth}
-            className="h-8 w-8 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </button>
+      <select
+        aria-label="Month"
+        value={month}
+        onChange={e => handleMonthChange(e.target.value)}
+        disabled={disabled}
+        className={cn(selectClass, 'flex-1')}
+      >
+        <option value="" disabled>Month</option>
+        {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+      </select>
 
-          <span className="text-sm font-semibold text-zinc-100">
-            {MONTHS[viewMonth]} {viewYear}
-          </span>
-
-          <button
-            type="button"
-            onClick={nextMonth}
-            className="h-8 w-8 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-
-        {/* ── Weekday headers ── */}
-        <div className="grid grid-cols-7 mb-1">
-          {WEEKDAYS.map(d => (
-            <div
-              key={d}
-              className="h-8 flex items-center justify-center text-[11px] font-semibold text-zinc-500 uppercase tracking-wide"
-            >
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* ── Day grid ── */}
-        <div className="grid grid-cols-7 gap-y-0.5">
-          {cells.map((day, i) => {
-            if (!day) return <div key={i} />
-
-            const isSel =
-              selected &&
-              selected.getDate()     === day &&
-              selected.getMonth()    === viewMonth &&
-              selected.getFullYear() === viewYear
-
-            const isToday =
-              today.getDate()     === day &&
-              today.getMonth()    === viewMonth &&
-              today.getFullYear() === viewYear
-
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handleDayClick(day)}
-                className={cn(
-                  'h-9 w-full flex items-center justify-center rounded-md text-sm font-medium transition-colors',
-                  isSel
-                    ? 'bg-sky-500 text-white hover:bg-sky-400'
-                    : isToday
-                    ? 'text-sky-400 font-bold hover:bg-zinc-800'
-                    : 'text-zinc-300 hover:bg-zinc-800 hover:text-white',
-                )}
-              >
-                {day}
-              </button>
-            )
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
+      <select
+        aria-label="Year"
+        value={year}
+        onChange={e => handleYearChange(e.target.value)}
+        disabled={disabled}
+        className={cn(selectClass, 'w-[90px]')}
+      >
+        <option value="" disabled>Year</option>
+        {years.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
   )
 }

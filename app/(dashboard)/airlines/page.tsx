@@ -3,6 +3,7 @@ import { getAirlines } from '@/lib/wp-client'
 import { Topbar } from '@/components/topbar'
 import { Button } from '@/components/ui/button'
 import { DeleteEntityButton } from '@/components/delete-entity-button'
+import { formatBaggage } from '@/lib/format-baggage'
 import { Plus, Pencil } from 'lucide-react'
 
 export default async function AirlinesPage() {
@@ -26,7 +27,7 @@ export default async function AirlinesPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1c1c1c]">
-              {['Name', 'Baggage Allowance', 'Actions'].map(h => (
+              {['Name', 'Baggage Allowance', 'Type', 'Actions'].map(h => (
                 <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-5 py-3">
                   {h}
                 </th>
@@ -36,7 +37,7 @@ export default async function AirlinesPage() {
           <tbody>
             {airlines.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-5 py-12 text-center text-sm text-zinc-500">
+                <td colSpan={4} className="px-5 py-12 text-center text-sm text-zinc-500">
                   No airlines found. Add one to get started.
                 </td>
               </tr>
@@ -46,7 +47,20 @@ export default async function AirlinesPage() {
                   <td className="px-5 py-3.5">
                     <p className="text-sm font-medium text-zinc-200">{airline.name}</p>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-zinc-500">{airline.baggage_allowance}</td>
+                  <td className="px-5 py-3.5 text-sm text-zinc-500">{formatBaggage(airline) || '—'}</td>
+                  <td className="px-5 py-3.5">
+                    {airline.type ? (
+                      <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${
+                        airline.type === 'international'
+                          ? 'bg-sky-950/60 text-sky-400 border border-sky-800/60'
+                          : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                      }`}>
+                        {airline.type}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-zinc-600">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">
                       <Link href={`/airlines/${airline.id}/edit`}>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getTrips } from '@/lib/wp-client'
+import { sortTripsByNumber } from '@/lib/sort-trips'
 import { Topbar } from '@/components/topbar'
 import { Button } from '@/components/ui/button'
 import { BulkTable } from './bulk-table'
@@ -11,10 +12,10 @@ interface Props {
 }
 
 export default async function TripsPage({ searchParams }: Props) {
-  const trips = await getTrips({
+  const trips = sortTripsByNumber(await getTrips({
     search: searchParams.search,
     status: searchParams.status,
-  })
+  }))
 
   return (
     <div>

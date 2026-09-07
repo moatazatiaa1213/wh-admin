@@ -8,11 +8,22 @@ import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ImageUploadField } from '@/components/image-upload-field'
 import type { Airline } from '@/lib/types'
 
 const airlineSchema = z.object({
   name: z.string().min(1, 'Required'),
-  baggage_allowance: z.string().min(1, 'Required'),
+  type: z.enum(['domestic', 'international']).optional(),
+  checked_bags_count: z.coerce.number().int().nonnegative().optional(),
+  checked_bags_weight_kg: z.coerce.number().nonnegative().optional(),
+  carry_on_weight_kg: z.coerce.number().nonnegative().optional(),
   photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
 })
 
@@ -29,13 +40,18 @@ export function AirlineForm({ airline }: AirlineFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<AirlineFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(airlineSchema) as any,
     defaultValues: {
       name: airline?.name ?? '',
-      baggage_allowance: airline?.baggage_allowance ?? '',
+      type: airline?.type,
+      checked_bags_count: airline?.checked_bags_count,
+      checked_bags_weight_kg: airline?.checked_bags_weight_kg,
+      carry_on_weight_kg: airline?.carry_on_weight_kg,
       photo: airline?.photo ?? '',
     },
   })
@@ -71,14 +87,48 @@ export function AirlineForm({ airline }: AirlineFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <Label className={lbl}>Baggage Allowance</Label>
-        <Input {...register('baggage_allowance')} className={f} placeholder="e.g. 23kg checked + 7kg carry-on" />
-        {errors.baggage_allowance && <p className={err}>{errors.baggage_allowance.message}</p>}
+        <Label className={lbl}>Flight Type <span className="text-zinc-600">(optional)</span></Label>
+        <Select
+          defaultValue={watch('type')}
+          onValueChange={val => setValue('type', val as 'domestic' | 'international')}
+        >
+          <SelectTrigger className={f}>
+            <SelectValue placeholder="Not specified" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#111111] border-[#1c1c1c]">
+            <SelectItem value="domestic" className="text-zinc-300 focus:bg-zinc-800">Domestic</SelectItem>
+            <SelectItem value="international" className="text-zinc-300 focus:bg-zinc-800">International</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-1.5">
-        <Label className={lbl}>Airline Logo URL <span className="text-zinc-600">(optional)</span></Label>
-        <Input {...register('photo')} type="url" className={f} placeholder="https://…" />
+        <Label className={lbl}>Luggage Allowance <span className="text-zinc-600">(optional)</span></Label>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-zinc-500">Checked Bags (count)</Label>
+            <Input {...register('checked_bags_count')} type="number" min="0" className={f} placeholder="2" />
+            {errors.checked_bags_count && <p className={err}>{errors.checked_bags_count.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-zinc-500">Checked Bag Weight (kg)</Label>
+            <Input {...register('checked_bags_weight_kg')} type="number" min="0" step="0.5" className={f} placeholder="23" />
+            {errors.checked_bags_weight_kg && <p className={err}>{errors.checked_bags_weight_kg.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-zinc-500">Carry-on Weight (kg)</Label>
+            <Input {...register('carry_on_weight_kg')} type="number" min="0" step="0.5" className={f} placeholder="7" />
+            {errors.carry_on_weight_kg && <p className={err}>{errors.carry_on_weight_kg.message}</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={lbl}>Airline Logo <span className="text-zinc-600">(optional)</span></Label>
+        <ImageUploadField
+          value={watch('photo') ?? ''}
+          onChange={url => setValue('photo', url, { shouldValidate: true })}
+        />
         {errors.photo && <p className={err}>{errors.photo.message}</p>}
       </div>
 

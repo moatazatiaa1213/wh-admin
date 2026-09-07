@@ -90,6 +90,7 @@ const s = StyleSheet.create({
   },
   chipLabel: { fontSize: 7.5, color: C.muted, marginBottom: 3, fontFamily: 'Helvetica-Bold' },
   chipValue: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: C.green },
+  chipValueSmall: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.green },
 
   // ── Section heading
   sectionHeading: {
@@ -245,8 +246,8 @@ export function TripBrochure({
             </View>
             <View style={s.chip}>
               <Text style={s.chipLabel}>DURATION</Text>
-              <Text style={s.chipValue}>
-                {trip.duration_nights}N / {trip.duration_days}D
+              <Text style={s.chipValueSmall}>
+                {trip.duration_days} Days / {trip.duration_nights} Nights
               </Text>
             </View>
           </View>

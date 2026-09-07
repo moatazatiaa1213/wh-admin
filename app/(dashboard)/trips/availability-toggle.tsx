@@ -44,7 +44,7 @@ export function AvailabilityToggle({ tripId, current }: Props) {
         }`}
     >
       <option value="available">Available</option>
-      <option value="completed">Completed</option>
+      <option value="completed">Fully Booked</option>
     </select>
   )
 }

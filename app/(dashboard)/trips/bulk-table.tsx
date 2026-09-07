@@ -111,7 +111,7 @@ export function BulkTable({ trips }: Props) {
             className="text-xs font-semibold px-2.5 py-1 rounded-full
               bg-zinc-800 border border-zinc-700 text-zinc-400
               hover:bg-zinc-700 disabled:opacity-40 transition-colors cursor-pointer"
-          >Completed</button>
+          >Fully Booked</button>
 
           <div className="w-px h-5 bg-zinc-700 mx-1" />
 
@@ -210,7 +210,7 @@ export function BulkTable({ trips }: Props) {
                   {trip.price_adult ? `$${Number(trip.price_adult).toLocaleString()}` : '—'}
                 </td>
                 <td className="px-5 py-3.5 text-sm text-zinc-500">
-                  {trip.duration_days}D / {trip.duration_nights}N
+                  {trip.duration_days} Days / {trip.duration_nights} Nights
                 </td>
                 <td className="px-5 py-3.5">
                   <StatusToggle tripId={trip.id} current={trip.status as 'published' | 'draft'} />

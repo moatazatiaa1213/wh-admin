@@ -8,6 +8,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUploadField } from '@/components/image-upload-field'
 import type { Hotel } from '@/lib/types'
 
 const hotelSchema = z.object({
@@ -16,6 +17,7 @@ const hotelSchema = z.object({
   location: z.string().min(1, 'Required'),
   photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
   website: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+  map_url: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
 })
 
 type HotelFormValues = z.infer<typeof hotelSchema>
@@ -31,6 +33,8 @@ export function HotelForm({ hotel }: HotelFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<HotelFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +45,7 @@ export function HotelForm({ hotel }: HotelFormProps) {
       location: hotel?.location ?? '',
       photo: hotel?.photo ?? '',
       website: hotel?.website ?? '',
+      map_url: hotel?.map_url ?? '',
     },
   })
 
@@ -88,15 +93,24 @@ export function HotelForm({ hotel }: HotelFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <Label className={lbl}>Photo URL <span className="text-zinc-600">(optional)</span></Label>
-        <Input {...register('photo')} type="url" className={f} placeholder="https://…" />
-        {errors.photo && <p className={err}>{errors.photo.message}</p>}
+        <Label className={lbl}>Google Maps Link <span className="text-zinc-600">(optional)</span></Label>
+        <Input {...register('map_url')} type="url" className={f} placeholder="https://maps.google.com/…" />
+        {errors.map_url && <p className={err}>{errors.map_url.message}</p>}
       </div>
 
       <div className="space-y-1.5">
         <Label className={lbl}>Website URL <span className="text-zinc-600">(optional)</span></Label>
         <Input {...register('website')} type="url" className={f} placeholder="https://…" />
         {errors.website && <p className={err}>{errors.website.message}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={lbl}>Photo <span className="text-zinc-600">(optional)</span></Label>
+        <ImageUploadField
+          value={watch('photo') ?? ''}
+          onChange={url => setValue('photo', url, { shouldValidate: true })}
+        />
+        {errors.photo && <p className={err}>{errors.photo.message}</p>}
       </div>
 
       {mutation.isError && (

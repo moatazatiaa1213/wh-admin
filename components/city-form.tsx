@@ -8,12 +8,15 @@ import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ImageUploadField } from '@/components/image-upload-field'
 import type { City } from '@/lib/types'
 
 const citySchema = z.object({
   name: z.string().min(1, 'Required'),
   country: z.string().min(1, 'Required'),
   location: z.string().min(1, 'Required'),
+  photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
+  map_url: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
 })
 
 type CityFormValues = z.infer<typeof citySchema>
@@ -29,6 +32,8 @@ export function CityForm({ city }: CityFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CityFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +42,8 @@ export function CityForm({ city }: CityFormProps) {
       name: city?.name ?? '',
       country: city?.country ?? '',
       location: city?.location ?? '',
+      photo: city?.photo ?? '',
+      map_url: city?.map_url ?? '',
     },
   })
 
@@ -83,6 +90,21 @@ export function CityForm({ city }: CityFormProps) {
         <Label className={lbl}>Location</Label>
         <Input {...register('location')} className={f} placeholder="e.g. Hunza-Nagar District, Gilgit-Baltistan" />
         {errors.location && <p className={err}>{errors.location.message}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={lbl}>Google Maps Link <span className="text-zinc-600">(optional)</span></Label>
+        <Input {...register('map_url')} type="url" className={f} placeholder="https://maps.google.com/…" />
+        {errors.map_url && <p className={err}>{errors.map_url.message}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={lbl}>Photo <span className="text-zinc-600">(optional)</span></Label>
+        <ImageUploadField
+          value={watch('photo') ?? ''}
+          onChange={url => setValue('photo', url, { shouldValidate: true })}
+        />
+        {errors.photo && <p className={err}>{errors.photo.message}</p>}
       </div>
 
       {mutation.isError && (

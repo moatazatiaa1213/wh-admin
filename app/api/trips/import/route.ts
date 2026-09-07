@@ -150,6 +150,9 @@ export async function POST(req: Request) {
           hotel_ids:     resolveNames(hotels,     cell(row, idx, 'hotels')),
           airline_ids:   resolveNames(airlines,   cell(row, idx, 'airlines')),
           excursion_ids: resolveNames(excursions, cell(row, idx, 'excursions')),
+          // No per-city-nights column in the import template (see plan follow-up
+          // note) — imported trips use duration_days/duration_nights directly.
+          city_nights: {},
         })
 
         results.push({ row: rowNum, title, status: 'ok' })
