@@ -728,6 +728,12 @@ function whh_print_styles(): void {
         font-size: 28px; font-weight: 800;
         color: #1a1a1a; margin: 0; line-height: 1.3;
     }
+    .whh-detail-banner {
+        margin-bottom: 28px; border-radius: 8px; overflow: hidden;
+    }
+    .whh-detail-banner img {
+        width: 100%; height: 360px; object-fit: cover; display: block;
+    }
 
     /* ── Detail ── */
     .whh-detail { font-family: inherit; }
@@ -954,6 +960,12 @@ function whh_render_detail( array $t ): string {
             <span class="whh-detail-number"><?php echo esc_html( $t['trip_number'] ); ?></span>
             <h1 class="whh-detail-title"><?php echo esc_html( whh_clean_title( $t['title'] ) ); ?></h1>
         </div>
+
+        <?php if ( ! empty( $t['featured_image'] ) ): ?>
+        <div class="whh-detail-banner">
+            <img src="<?php echo esc_url( $t['featured_image'] ); ?>" alt="<?php echo esc_attr( whh_clean_title( $t['title'] ) ); ?>">
+        </div>
+        <?php endif; ?>
 
         <div class="whh-detail-layout">
 
