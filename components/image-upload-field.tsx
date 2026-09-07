@@ -5,7 +5,13 @@ import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
 
 interface Props {
   value: string
-  onChange: (url: string) => void
+  // `attachmentId` is the WordPress media library ID for the uploaded file —
+  // only present when the image came from an actual upload (not when the
+  // fallback URL input was typed/pasted into, and not when clearing).
+  // Callers that need to set a post's featured image (e.g. trip-form.tsx)
+  // must capture this and forward it to the server, since WP's
+  // set_post_thumbnail() needs the attachment ID, not the file URL.
+  onChange: (url: string, attachmentId?: number) => void
 }
 
 export function ImageUploadField({ value, onChange }: Props) {
@@ -21,9 +27,9 @@ export function ImageUploadField({ value, onChange }: Props) {
       const fd  = new FormData()
       fd.append('file', file)
       const res  = await fetch('/api/media/upload', { method: 'POST', body: fd })
-      const data = await res.json() as { url?: string; error?: string }
+      const data = await res.json() as { id?: number; url?: string; error?: string }
       if (!res.ok) throw new Error(data.error ?? 'Upload failed')
-      onChange(data.url ?? '')
+      onChange(data.url ?? '', data.id)
     } catch (e) {
       setError(String(e))
     } finally {

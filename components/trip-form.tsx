@@ -144,6 +144,12 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
     setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)))
   }
 
+  // ── Featured image's WordPress attachment ID — only known right after a
+  // fresh upload (see ImageUploadField). Omitted from the payload when unset
+  // so editing a trip without re-uploading doesn't clobber an existing
+  // featured image that was set some other way (e.g. via the Telegram bot).
+  const [featuredImageId, setFeaturedImageId] = useState<number | undefined>(undefined)
+
   const mutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
       const url = isEditing ? `/api/trips/${trip.id}` : '/api/trips'
@@ -151,7 +157,12 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, city_nights: cityNights, itinerary }),
+        body: JSON.stringify({
+          ...data,
+          city_nights: cityNights,
+          itinerary,
+          ...(featuredImageId ? { featured_image_id: featuredImageId } : {}),
+        }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -307,7 +318,10 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
         <Label className={lbl}>Image <span className="text-zinc-600">(optional)</span></Label>
         <ImageUploadField
           value={watch('featured_image') ?? ''}
-          onChange={url => setValue('featured_image', url)}
+          onChange={(url, id) => {
+            setValue('featured_image', url)
+            setFeaturedImageId(id)
+          }}
         />
         {errors.featured_image && <p className={err}>{errors.featured_image.message}</p>}
       </div>
