@@ -14,6 +14,7 @@ import {
   PlaneTakeoff,
   Compass,
   ArrowRightLeft,
+  UserCog,
 } from 'lucide-react'
 
 const mainNav = [
@@ -87,6 +88,18 @@ export function Sidebar() {
         >
           <ArrowRightLeft size={15} className={isActive('/migration') ? 'text-sky-500' : 'text-zinc-600'} />
           Migration
+        </Link>
+
+        <Link
+          href="/users"
+          className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 cursor-pointer ${
+            isActive('/users')
+              ? 'bg-zinc-900 text-zinc-50'
+              : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+          }`}
+        >
+          <UserCog size={15} className={isActive('/users') ? 'text-sky-500' : 'text-zinc-600'} />
+          Users
         </Link>
 
         <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 px-2 pt-4 pb-2">
