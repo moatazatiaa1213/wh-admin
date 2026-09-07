@@ -305,6 +305,11 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
     }
 
     // WHH dashboard-specific fields
+    // Destination is read back from the tour-destination taxonomy (see
+    // whh_format_tour()), not post meta — assign the submitted text as that
+    // post's single destination term so the dashboard's free-text field
+    // actually takes effect (append=false replaces any prior assignment).
+    if ( ! empty( $data['destination'] ) )     wp_set_object_terms( $post_id, sanitize_text_field( $data['destination'] ), 'tour-destination' );
     if ( isset( $data['trip_number'] ) )      update_post_meta( $post_id, 'whh-trip-number',   sanitize_text_field( $data['trip_number'] ) );
     if ( isset( $data['availability'] ) )     update_post_meta( $post_id, 'whh-availability',  sanitize_text_field( $data['availability'] ) );
     if ( ! empty( $data['featured_image_id'] ) ) set_post_thumbnail( $post_id, (int) $data['featured_image_id'] );
