@@ -153,6 +153,10 @@ export async function POST(req: Request) {
           // No per-city-nights column in the import template (see plan follow-up
           // note) — imported trips use duration_days/duration_nights directly.
           city_nights: {},
+          // Itinerary (day-by-day plan) isn't expressible in a spreadsheet row —
+          // same rationale as city_nights above. Imported trips start with an
+          // empty itinerary; edit via the trip-form to add days.
+          itinerary: [],
         })
 
         results.push({ row: rowNum, title, status: 'ok' })

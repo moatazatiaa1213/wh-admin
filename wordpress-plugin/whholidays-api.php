@@ -199,6 +199,7 @@ function whh_format_tour( WP_Post $post ): array {
         'airline_ids'     => whh_meta_json( $id, 'whh-airline-ids' ),
         'excursion_ids'   => whh_meta_json( $id, 'whh-excursion-ids' ),
         'city_nights'     => whh_meta_json( $id, 'whh-city-nights' ),
+        'itinerary'       => whh_meta_json( $id, 'whh-itinerary' ),
     ];
 }
 
@@ -312,6 +313,7 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
     if ( isset( $data['airline_ids'] ) )   update_post_meta( $post_id, 'whh-airline-ids',   wp_json_encode( $data['airline_ids'] ) );
     if ( isset( $data['excursion_ids'] ) ) update_post_meta( $post_id, 'whh-excursion-ids', wp_json_encode( $data['excursion_ids'] ) );
     if ( isset( $data['city_nights'] ) )   update_post_meta( $post_id, 'whh-city-nights',   wp_json_encode( $data['city_nights'] ) );
+    if ( isset( $data['itinerary'] ) )     update_post_meta( $post_id, 'whh-itinerary',     wp_json_encode( $data['itinerary'] ) );
 }
 
 // ─── Bookings: read from tourmaster_record table ──────────────────────────────
@@ -994,6 +996,18 @@ function whh_render_detail( array $t ): string {
                             <strong>Destination <?php echo $i + 1; ?></strong>
                         </div>
                         <span><?php echo $c_map ? "<a href='{$c_map}' target='_blank' rel='noopener'>{$c_name}</a>" : $c_name; ?></span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $t['itinerary'] ) ): ?>
+                <div class="whh-section">
+                    <h2>🗓️ Itinerary</h2>
+                    <?php foreach ( $t['itinerary'] as $day ): ?>
+                    <div class="whh-lib-item">
+                        <strong>Day <?php echo (int) ( $day['day'] ?? 0 ); ?><?php echo ! empty( $day['title'] ) ? ' — ' . esc_html( $day['title'] ) : ''; ?></strong>
+                        <?php if ( ! empty( $day['description'] ) ): ?><span class="whh-lib-sub"><?php echo esc_html( $day['description'] ); ?></span><?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>

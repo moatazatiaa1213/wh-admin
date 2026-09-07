@@ -129,6 +129,21 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
     setValue('duration_days', nights + 1)
   }, [cityNights, setValue])
 
+  // ── Day-by-day itinerary — plain state, merged into the payload on submit
+  // (same pattern as cityNights above; not part of the zod schema) ──────────
+  type ItineraryDay = { day: number; title: string; description: string }
+  const [itinerary, setItinerary] = useState<ItineraryDay[]>(trip?.itinerary ?? [])
+
+  function addDay() {
+    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '' }])
+  }
+  function removeDay(index: number) {
+    setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })))
+  }
+  function updateDay(index: number, field: 'title' | 'description', value: string) {
+    setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)))
+  }
+
   const mutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
       const url = isEditing ? `/api/trips/${trip.id}` : '/api/trips'
@@ -136,7 +151,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, city_nights: cityNights }),
+        body: JSON.stringify({ ...data, city_nights: cityNights, itinerary }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -380,6 +395,48 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           placeholder="Select excursions…"
           emptyMessage="No excursions found. Create one in the Excursions library."
         />
+      </div>
+
+      {/* ── Itinerary ── */}
+      <SectionHeader title="Itinerary" />
+
+      <div className="space-y-3">
+        {itinerary.map((dayItem, index) => (
+          <div key={index} className="space-y-2 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold text-zinc-400 whitespace-nowrap">Day {dayItem.day}</span>
+              <button
+                type="button"
+                onClick={() => removeDay(index)}
+                className="text-xs text-red-400 hover:text-red-300 cursor-pointer"
+              >
+                Remove
+              </button>
+            </div>
+            <Input
+              value={dayItem.title}
+              onChange={e => updateDay(index, 'title', e.target.value)}
+              className={f}
+              placeholder="e.g. Arrival in Hunza & Attabad Lake"
+            />
+            <Textarea
+              value={dayItem.description}
+              onChange={e => updateDay(index, 'description', e.target.value)}
+              className={f}
+              rows={2}
+              placeholder="Describe what happens on this day…"
+            />
+          </div>
+        ))}
+
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={addDay}
+          className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 cursor-pointer border border-dashed border-[#1c1c1c] w-full"
+        >
+          + Add Day
+        </Button>
       </div>
 
       {/* ── Error / Submit ── */}

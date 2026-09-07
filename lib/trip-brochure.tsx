@@ -285,6 +285,21 @@ export function TripBrochure({
             </>
           )}
 
+          {/* ── Itinerary ── */}
+          {trip.itinerary.length > 0 && (
+            <>
+              <Text style={s.sectionHeading}>Itinerary</Text>
+              {trip.itinerary.map((d, i) => (
+                <View key={i} style={s.detailRow}>
+                  <Text style={s.detailLabel}>Day {d.day}</Text>
+                  <Text style={s.detailValue}>
+                    {d.title}{d.title && d.description ? ' — ' : ''}{d.description}
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
+
           {/* ── Details ── */}
           {hasDetails && (
             <>

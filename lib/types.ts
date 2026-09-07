@@ -71,6 +71,11 @@ export interface Trip {
   // Nights stayed per city (city_id -> nights); duration_nights/duration_days
   // are derived from this as the source of truth (see components/trip-form.tsx)
   city_nights: Record<string, number>
+
+  // Day-by-day itinerary. Ordered by array position (day numbers are kept
+  // sequential 1..N by the editor UI, not independently reorderable — see
+  // components/trip-form.tsx).
+  itinerary: { day: number; title: string; description: string }[]
 }
 
 export type TripInput = Omit<Trip, 'id' | 'created_at'> & {

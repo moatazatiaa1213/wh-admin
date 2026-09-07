@@ -23,6 +23,11 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-1', 'hotel-2'],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-1', 'exc-2'],
+    itinerary: [
+      { day: 1, title: 'Arrival in Hunza', description: 'Arrive at Gilgit airport, transfer to Hunza, evening at leisure.' },
+      { day: 2, title: 'Attabad Lake & Karimabad', description: 'Boat ride on Attabad Lake, explore Karimabad bazaar.' },
+      { day: 3, title: 'Baltit Fort & Eagle\'s Nest', description: 'Visit Baltit Fort and sunrise viewpoint at Eagle\'s Nest.' },
+    ],
   },
   {
     id: 'trip-2',
@@ -46,6 +51,10 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-4'],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-4'],
+    itinerary: [
+      { day: 1, title: 'Arrival in Swat', description: 'Drive up to Swat, check in and relax by the river.' },
+      { day: 2, title: 'Malam Jabba & Kalam', description: 'Chairlift ride at Malam Jabba, onward to Kalam valley.' },
+    ],
   },
   {
     id: 'trip-3',
@@ -69,6 +78,10 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-3'],
     airline_ids: ['airline-1', 'airline-2'],
     excursion_ids: ['exc-3'],
+    itinerary: [
+      { day: 1, title: 'Arrival in Skardu', description: 'Fly into Skardu, check in at Shangrila Resort.' },
+      { day: 2, title: 'Satpara Lake & Deosai Plains', description: 'Visit Satpara Lake, drive up to the Deosai Plains.' },
+    ],
   },
   {
     id: 'trip-4',
@@ -91,6 +104,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-7'],
     airline_ids: [],
     excursion_ids: ['exc-7'],
+    itinerary: [],
   },
   {
     id: 'trip-5',
@@ -113,6 +127,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-6'],
     airline_ids: ['airline-1'],
     excursion_ids: [],
+    itinerary: [],
   },
   {
     id: 'trip-6',
@@ -135,6 +150,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-8'],
     airline_ids: [],
     excursion_ids: ['exc-8'],
+    itinerary: [],
   },
   {
     id: 'trip-7',
@@ -157,6 +173,23 @@ export const mockTrips: Trip[] = [
     hotel_ids: [],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-5'],
+    // Long itinerary — useful for testing PDF brochure pagination/overflow.
+    itinerary: [
+      { day: 1, title: 'Islamabad to Skardu', description: 'Fly or drive to Skardu, overnight briefing.' },
+      { day: 2, title: 'Skardu to Askole', description: 'Jeep drive along the Braldu River to Askole, the trek\'s starting point.' },
+      { day: 3, title: 'Askole to Jhola', description: 'Begin trekking, cross the Braldu River suspension bridge.' },
+      { day: 4, title: 'Jhola to Paiju', description: 'Trek through Paiju forest, last vegetation before the glacier.' },
+      { day: 5, title: 'Rest day at Paiju', description: 'Acclimatization day, prepare for glacier trekking.' },
+      { day: 6, title: 'Paiju to Khoburtse', description: 'Onto the Baltoro Glacier, views of Trango Towers.' },
+      { day: 7, title: 'Khoburtse to Concordia', description: 'Approach Concordia with views of Gasherbrum and Broad Peak.' },
+      { day: 8, title: 'Concordia to K2 Base Camp', description: 'Trek to K2 Base Camp, first close view of K2.' },
+      { day: 9, title: 'Rest day at K2 Base Camp', description: 'Explore base camp area, weather-dependent activities.' },
+      { day: 10, title: 'K2 Base Camp to Concordia', description: 'Retrace the route back to Concordia.' },
+      { day: 11, title: 'Concordia to Khoburtse', description: 'Descend the Baltoro Glacier.' },
+      { day: 12, title: 'Khoburtse to Jhola', description: 'Continue descent through Paiju.' },
+      { day: 13, title: 'Jhola to Askole', description: 'Final trekking day back to Askole.' },
+      { day: 14, title: 'Askole to Skardu', description: 'Jeep drive back to Skardu, celebration dinner.' },
+    ],
   },
   {
     id: 'trip-8',
@@ -179,5 +212,6 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-5'],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-6'],
+    itinerary: [],
   },
 ]
