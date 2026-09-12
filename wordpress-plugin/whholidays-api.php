@@ -165,11 +165,11 @@ function whh_format_tour( WP_Post $post ): array {
         get_post_meta( $id, 'tourmaster-price-single-supplement', true ) ?: 0
     );
 
-    // --- Destination (from taxonomy) ---
-    $dest_terms  = wp_get_post_terms( $id, 'tour-destination', [ 'fields' => 'names' ] );
-    $destination = ( ! is_wp_error( $dest_terms ) && ! empty( $dest_terms ) )
-        ? implode( ', ', $dest_terms )
-        : '';
+    // --- Destination (free text) and Trip Category (curated taxonomy) ---
+    $destination = get_post_meta( $id, 'whh-destination', true ) ?: '';
+
+    $cat_terms     = wp_get_post_terms( $id, 'tour-destination', [ 'fields' => 'names' ] );
+    $trip_category = ( ! is_wp_error( $cat_terms ) && ! empty( $cat_terms ) ) ? $cat_terms[0] : '';
 
     // --- WHH custom meta (our dashboard fields stored as whh- prefixed keys) ---
     return [
@@ -180,6 +180,7 @@ function whh_format_tour( WP_Post $post ): array {
         'description'     => wp_strip_all_tags( $post->post_excerpt )
                                 ?: wp_trim_words( wp_strip_all_tags( $post->post_content ), 40 ),
         'destination'     => $destination,
+        'trip_category'   => $trip_category,
         'travel_date'     => $travel_date,
         'end_date'        => $end_date,
         'duration_days'   => $duration_days,
@@ -207,6 +208,13 @@ function whh_meta_json( int $post_id, string $key ): array {
     $raw     = get_post_meta( $post_id, $key, true );
     $decoded = json_decode( $raw, true );
     return is_array( $decoded ) ? $decoded : [];
+}
+
+// The 8 curated tour-destination taxonomy terms (mirrors lib/types.ts
+// TRIP_CATEGORIES) — the only values whh_save_tour_meta() will ever assign,
+// so the taxonomy never gets polluted with one-off terms from free text.
+function whh_trip_categories(): array {
+    return [ 'Western Europe', 'Eastern Europe', 'Southern Europe', 'Northern Europe', 'Middle East', 'Far East', 'Asia', 'African Adventure' ];
 }
 
 // ─── Tours: CRUD ─────────────────────────────────────────────────────────────
@@ -305,11 +313,13 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
     }
 
     // WHH dashboard-specific fields
-    // Destination is read back from the tour-destination taxonomy (see
-    // whh_format_tour()), not post meta — assign the submitted text as that
-    // post's single destination term so the dashboard's free-text field
-    // actually takes effect (append=false replaces any prior assignment).
-    if ( ! empty( $data['destination'] ) )     wp_set_object_terms( $post_id, sanitize_text_field( $data['destination'] ), 'tour-destination' );
+    // Destination: pure free text, no taxonomy side-effect.
+    if ( isset( $data['destination'] ) )       update_post_meta( $post_id, 'whh-destination', sanitize_text_field( $data['destination'] ) );
+    // Trip Category: the ONLY thing allowed to touch tour-destination, and only
+    // ever to one of the fixed curated terms (prevents junk term creation).
+    if ( ! empty( $data['trip_category'] ) && in_array( $data['trip_category'], whh_trip_categories(), true ) ) {
+        wp_set_object_terms( $post_id, $data['trip_category'], 'tour-destination' );
+    }
     if ( isset( $data['trip_number'] ) )      update_post_meta( $post_id, 'whh-trip-number',   sanitize_text_field( $data['trip_number'] ) );
     if ( isset( $data['availability'] ) )     update_post_meta( $post_id, 'whh-availability',  sanitize_text_field( $data['availability'] ) );
     if ( ! empty( $data['featured_image_id'] ) ) set_post_thumbnail( $post_id, (int) $data['featured_image_id'] );

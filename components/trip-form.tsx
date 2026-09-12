@@ -21,7 +21,8 @@ import { MultiSelect }        from '@/components/multi-select'
 import { ImageUploadField }   from '@/components/image-upload-field'
 import { DatePicker } from '@/components/date-picker'
 import { formatBaggage } from '@/lib/format-baggage'
-import type { Trip, City, Hotel, Airline, Excursion } from '@/lib/types'
+import { TRIP_CATEGORIES } from '@/lib/types'
+import type { Trip, City, Hotel, Airline, Excursion, TripCategory } from '@/lib/types'
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ const tripSchema = z.object({
   trip_number: z.string().min(1, 'Trip number is required'),
   description: z.string().min(1, 'Description is required'),
   destination: z.string().min(1, 'Destination is required'),
+  trip_category: z.enum(TRIP_CATEGORIES).optional(),
   travel_date: z.string().min(1, 'Travel date is required'),
   end_date: z.string().min(1, 'End date is required'),
   duration_days: z.coerce.number().int().nonnegative(),
@@ -88,6 +90,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       trip_number: trip?.trip_number ?? nextTripNumber ?? '',
       description: trip?.description ?? '',
       destination: trip?.destination ?? '',
+      trip_category: trip?.trip_category,
       travel_date: trip?.travel_date ?? '',
       end_date: trip?.end_date ?? '',
       duration_days: trip?.duration_days ?? undefined,
@@ -233,6 +236,25 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={lbl}>Trip Category <span className="text-zinc-600">(optional)</span></Label>
+        <Select
+          defaultValue={watch('trip_category')}
+          onValueChange={val => setValue('trip_category', val as TripCategory)}
+        >
+          <SelectTrigger className={f}>
+            <SelectValue placeholder="Not specified" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#111111] border-[#1c1c1c]">
+            {TRIP_CATEGORIES.map(cat => (
+              <SelectItem key={cat} value={cat} className="text-zinc-300 focus:bg-zinc-800">
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* ── Dates & Duration ── */}

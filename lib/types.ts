@@ -38,12 +38,29 @@ export interface Excursion {
 
 // ─── Core types ───────────────────────────────────────────────────────────────
 
+// The 8 curated tour-destination taxonomy terms (also used by the site's
+// homepage "Popular Destinations" widget) — the only values ever assigned to
+// a trip's category, so the taxonomy never gets polluted with one-off terms.
+export const TRIP_CATEGORIES = [
+  'Western Europe',
+  'Eastern Europe',
+  'Southern Europe',
+  'Northern Europe',
+  'Middle East',
+  'Far East',
+  'Asia',
+  'African Adventure',
+] as const
+
+export type TripCategory = typeof TRIP_CATEGORIES[number]
+
 export interface Trip {
   id: string
   title: string
   trip_number: string
   description: string
   destination: string
+  trip_category?: TripCategory
 
   // Dates
   travel_date: string   // ISO date string, e.g. "2026-07-01"
