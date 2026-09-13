@@ -14,8 +14,10 @@ export default async function UsersPage() {
   let dbError: string | null = null
   try {
     users = await listUsers()
+    console.log('[DEBUG users/page] listUsers() returned:', JSON.stringify(users), 'DATABASE_URL host:', process.env.DATABASE_URL?.split('@')[1]?.split('/')[0])
   } catch (e) {
     dbError = (e as Error).message ?? String(e)
+    console.log('[DEBUG users/page] listUsers() threw:', dbError)
   }
 
   if (dbError) {
