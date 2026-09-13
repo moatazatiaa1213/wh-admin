@@ -1,16 +1,16 @@
-import { neon } from '@neondatabase/serverless'
 import { Topbar } from '@/components/topbar'
 import { DeleteEntityButton } from '@/components/delete-entity-button'
 import { UserForm } from '@/components/user-form'
 import { listUsers } from '@/lib/users'
 
 // Reads directly from Postgres via a third-party driver that issues its own
-// internal fetch() calls — Next.js's Data Cache was observed to cache and
-// persist one of those fetch signatures (same URL+body) across deployments,
-// serving a stale empty result forever after the very first (pre-data)
-// build. `dynamic` alone didn't override it; `fetchCache` explicitly forces
-// every fetch in this segment, including ones from libraries we don't
-// control, to bypass the Data Cache.
+// internal fetch() calls — Next.js's Data Cache was caching that fetch call
+// (same URL+body every time) and persisting the result across deployments,
+// so the page kept showing the empty result from the very first build
+// (before any user existed) no matter how many users were added later.
+// `dynamic` alone didn't override this; `fetchCache` explicitly forces
+// every fetch in this segment — including ones from libraries we don't
+// control — to bypass the Data Cache.
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
@@ -19,11 +19,8 @@ export default async function UsersPage() {
 
   let users: Awaited<ReturnType<typeof listUsers>> = []
   let dbError: string | null = null
-  let inlineProbe: unknown = null
   try {
     users = await listUsers()
-    const sqlInline = neon(process.env.DATABASE_URL!)
-    inlineProbe = await sqlInline`SELECT username, created_at FROM admin_users ORDER BY username`
   } catch (e) {
     dbError = (e as Error).message ?? String(e)
   }
@@ -99,7 +96,6 @@ export default async function UsersPage() {
           </tbody>
         </table>
       </div>
-      <div id="temp-debug" style={{ display: 'none' }}>{JSON.stringify({ users, inlineProbe })}</div>
     </div>
   )
 }

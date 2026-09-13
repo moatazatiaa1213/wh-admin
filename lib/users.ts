@@ -4,14 +4,12 @@ import { promisify } from 'node:util'
 
 const scrypt = promisify(scryptCallback)
 
-// A fresh client per call (not a cached module-level singleton, and not
-// created at module load — so builds/imports don't fail when DATABASE_URL
-// isn't set in the environment doing the importing, e.g. build time). A
-// shared long-lived client object was observed to make queries called from
-// a Server Component render (the /users page) silently return stale/empty
-// results, while the exact same query worked correctly from a Route
-// Handler or a locally-constructed client — a fresh client per call sides
-// steps whatever caching Next.js/the driver applies to a reused instance.
+// Created lazily per call (not at module load) so builds/imports don't fail
+// when DATABASE_URL isn't set in the environment doing the importing (e.g.
+// build time). The actual fix for stale reads from the /users page turned
+// out to be `fetchCache = 'force-no-store'` on that page (Next.js's Data
+// Cache was persisting this driver's internal fetch calls across
+// deployments) — see app/(dashboard)/users/page.tsx.
 function getSql() {
   return neon(process.env.DATABASE_URL!)
 }
@@ -58,16 +56,10 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return derived.length === hash.length && timingSafeEqual(derived, hash)
 }
 
-// listUsers/deleteUser/verifyCredentials deliberately do NOT call
-// ensureTable() first: issuing a CREATE TABLE immediately before a SELECT to
-// the same Neon HTTP endpoint, in the same Server Component render, was
-// getting collapsed by Next.js's automatic fetch request memoization (both
-// are POSTs to the same URL) — the SELECT would spuriously receive the
-// CREATE TABLE's empty result. Route Handlers aren't part of the render
-// tree so this only ever showed up in the page, not the API route. Instead,
-// each read treats "relation does not exist" as an empty/negative result;
-// only createUser() (always invoked from a Route Handler, never during
-// page render) is responsible for bootstrapping the table.
+// listUsers/deleteUser/verifyCredentials deliberately skip ensureTable():
+// a plain read doesn't need to issue a CREATE TABLE first, so each just
+// treats "relation does not exist" as an empty/negative result. Only
+// createUser() is responsible for bootstrapping the table on first use.
 
 export async function listUsers(): Promise<AdminUser[]> {
   try {
