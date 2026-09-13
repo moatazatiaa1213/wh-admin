@@ -14,11 +14,16 @@ export default async function UsersPage() {
   let dbError: string | null = null
   try {
     users = await listUsers()
-    console.log('[DEBUG users/page] listUsers() returned:', JSON.stringify(users), 'DATABASE_URL host:', process.env.DATABASE_URL?.split('@')[1]?.split('/')[0])
   } catch (e) {
     dbError = (e as Error).message ?? String(e)
-    console.log('[DEBUG users/page] listUsers() threw:', dbError)
   }
+  const DEBUG_INFO = JSON.stringify({
+    users,
+    dbError,
+    dbHost: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0],
+    vercelEnv: process.env.VERCEL_ENV,
+    region: process.env.VERCEL_REGION,
+  })
 
   if (dbError) {
     return (
@@ -91,6 +96,7 @@ export default async function UsersPage() {
           </tbody>
         </table>
       </div>
+      <div id="temp-debug" style={{ display: 'none' }}>{DEBUG_INFO}</div>
     </div>
   )
 }
