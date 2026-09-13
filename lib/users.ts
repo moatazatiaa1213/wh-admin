@@ -1,15 +1,19 @@
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
+import { neon } from '@neondatabase/serverless'
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 
 const scrypt = promisify(scryptCallback)
 
-// Created lazily (not at module load) so builds/imports don't fail when
-// DATABASE_URL isn't set in the environment doing the importing (e.g. build time).
-let sqlClient: NeonQueryFunction<false, false> | null = null
+// A fresh client per call (not a cached module-level singleton, and not
+// created at module load — so builds/imports don't fail when DATABASE_URL
+// isn't set in the environment doing the importing, e.g. build time). A
+// shared long-lived client object was observed to make queries called from
+// a Server Component render (the /users page) silently return stale/empty
+// results, while the exact same query worked correctly from a Route
+// Handler or a locally-constructed client — a fresh client per call sides
+// steps whatever caching Next.js/the driver applies to a reused instance.
 function getSql() {
-  if (!sqlClient) sqlClient = neon(process.env.DATABASE_URL!)
-  return sqlClient
+  return neon(process.env.DATABASE_URL!)
 }
 
 // Postgres error code for "relation does not exist" — thrown when the
