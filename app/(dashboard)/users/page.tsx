@@ -1,3 +1,4 @@
+import { neon } from '@neondatabase/serverless'
 import { Topbar } from '@/components/topbar'
 import { DeleteEntityButton } from '@/components/delete-entity-button'
 import { UserForm } from '@/components/user-form'
@@ -12,8 +13,11 @@ export default async function UsersPage() {
 
   let users: Awaited<ReturnType<typeof listUsers>> = []
   let dbError: string | null = null
+  let inlineProbe: unknown = null
   try {
     users = await listUsers()
+    const sqlInline = neon(process.env.DATABASE_URL!)
+    inlineProbe = await sqlInline`SELECT username, created_at FROM admin_users ORDER BY username`
   } catch (e) {
     dbError = (e as Error).message ?? String(e)
   }
@@ -89,6 +93,7 @@ export default async function UsersPage() {
           </tbody>
         </table>
       </div>
+      <div id="temp-debug" style={{ display: 'none' }}>{JSON.stringify({ users, inlineProbe })}</div>
     </div>
   )
 }
