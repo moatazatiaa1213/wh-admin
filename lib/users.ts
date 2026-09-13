@@ -12,6 +12,14 @@ function getSql() {
   return sqlClient
 }
 
+// Postgres error code for "relation does not exist" — thrown when the
+// admin_users table hasn't been created yet (no user has ever been added).
+const UNDEFINED_TABLE = '42P01'
+
+function isMissingTable(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && 'code' in e && (e as { code?: string }).code === UNDEFINED_TABLE
+}
+
 let tableReady: Promise<unknown> | null = null
 function ensureTable() {
   if (!tableReady) {
@@ -46,10 +54,25 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   return derived.length === hash.length && timingSafeEqual(derived, hash)
 }
 
+// listUsers/deleteUser/verifyCredentials deliberately do NOT call
+// ensureTable() first: issuing a CREATE TABLE immediately before a SELECT to
+// the same Neon HTTP endpoint, in the same Server Component render, was
+// getting collapsed by Next.js's automatic fetch request memoization (both
+// are POSTs to the same URL) — the SELECT would spuriously receive the
+// CREATE TABLE's empty result. Route Handlers aren't part of the render
+// tree so this only ever showed up in the page, not the API route. Instead,
+// each read treats "relation does not exist" as an empty/negative result;
+// only createUser() (always invoked from a Route Handler, never during
+// page render) is responsible for bootstrapping the table.
+
 export async function listUsers(): Promise<AdminUser[]> {
-  await ensureTable()
-  const rows = await getSql()`SELECT username, created_at FROM admin_users ORDER BY username`
-  return rows.map(r => ({ username: r.username as string, createdAt: (r.created_at as Date).toISOString() }))
+  try {
+    const rows = await getSql()`SELECT username, created_at FROM admin_users ORDER BY username`
+    return rows.map(r => ({ username: r.username as string, createdAt: (r.created_at as Date).toISOString() }))
+  } catch (e) {
+    if (isMissingTable(e)) return []
+    throw e
+  }
 }
 
 export async function createUser(username: string, password: string): Promise<AdminUser> {
@@ -69,13 +92,20 @@ export async function createUser(username: string, password: string): Promise<Ad
 }
 
 export async function deleteUser(username: string): Promise<void> {
-  await ensureTable()
-  await getSql()`DELETE FROM admin_users WHERE username = ${username}`
+  try {
+    await getSql()`DELETE FROM admin_users WHERE username = ${username}`
+  } catch (e) {
+    if (!isMissingTable(e)) throw e
+  }
 }
 
 export async function verifyCredentials(username: string, password: string): Promise<boolean> {
-  await ensureTable()
-  const rows = await getSql()`SELECT password_hash FROM admin_users WHERE username = ${username}`
-  if (rows.length === 0) return false
-  return verifyPassword(password, rows[0].password_hash as string)
+  try {
+    const rows = await getSql()`SELECT password_hash FROM admin_users WHERE username = ${username}`
+    if (rows.length === 0) return false
+    return verifyPassword(password, rows[0].password_hash as string)
+  } catch (e) {
+    if (isMissingTable(e)) return false
+    throw e
+  }
 }

@@ -7,12 +7,7 @@ export async function GET() {
   if (auth) return auth
   try {
     const users = await listUsers()
-    return NextResponse.json({
-      users,
-      dbHost: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0],
-      vercelEnv: process.env.VERCEL_ENV,
-      region: process.env.VERCEL_REGION,
-    })
+    return NextResponse.json(users)
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }

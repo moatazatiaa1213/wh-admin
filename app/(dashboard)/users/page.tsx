@@ -1,4 +1,3 @@
-import { neon } from '@neondatabase/serverless'
 import { Topbar } from '@/components/topbar'
 import { DeleteEntityButton } from '@/components/delete-entity-button'
 import { UserForm } from '@/components/user-form'
@@ -13,24 +12,11 @@ export default async function UsersPage() {
 
   let users: Awaited<ReturnType<typeof listUsers>> = []
   let dbError: string | null = null
-  let rawProbe: unknown = null
   try {
     users = await listUsers()
-    const sql2 = neon(process.env.DATABASE_URL!)
-    rawProbe = await sql2`SELECT current_database() as db, current_schema() as schema, (SELECT count(*) FROM admin_users) as cnt, (SELECT array_agg(username) FROM admin_users) as usernames`
   } catch (e) {
     dbError = (e as Error).message ?? String(e)
   }
-  const DEBUG_INFO = JSON.stringify({
-    users,
-    dbError,
-    rawProbe,
-    dbHost: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0],
-    vercelEnv: process.env.VERCEL_ENV,
-    region: process.env.VERCEL_REGION,
-    now: new Date().toISOString(),
-    rand: Math.random(),
-  })
 
   if (dbError) {
     return (
@@ -103,7 +89,6 @@ export default async function UsersPage() {
           </tbody>
         </table>
       </div>
-      <div id="temp-debug" style={{ display: 'none' }}>{DEBUG_INFO}</div>
     </div>
   )
 }
