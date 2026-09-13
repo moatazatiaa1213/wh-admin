@@ -23,6 +23,8 @@ export default async function UsersPage() {
     dbHost: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0],
     vercelEnv: process.env.VERCEL_ENV,
     region: process.env.VERCEL_REGION,
+    now: new Date().toISOString(),
+    rand: Math.random(),
   })
 
   if (dbError) {
