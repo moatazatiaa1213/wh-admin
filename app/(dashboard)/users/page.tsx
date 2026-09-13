@@ -4,9 +4,15 @@ import { DeleteEntityButton } from '@/components/delete-entity-button'
 import { UserForm } from '@/components/user-form'
 import { listUsers } from '@/lib/users'
 
-// Reads directly from Postgres (not Next's fetch cache), so without this
-// Next.js can statically cache the page and hide newly created/deleted users.
+// Reads directly from Postgres via a third-party driver that issues its own
+// internal fetch() calls — Next.js's Data Cache was observed to cache and
+// persist one of those fetch signatures (same URL+body) across deployments,
+// serving a stale empty result forever after the very first (pre-data)
+// build. `dynamic` alone didn't override it; `fetchCache` explicitly forces
+// every fetch in this segment, including ones from libraries we don't
+// control, to bypass the Data Cache.
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 export default async function UsersPage() {
   const rootUser = process.env.ADMIN_USER
