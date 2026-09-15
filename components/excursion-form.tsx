@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUploadField } from '@/components/image-upload-field'
 import type { Excursion } from '@/lib/types'
 
 const excursionSchema = z.object({
@@ -30,6 +31,8 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ExcursionFormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,8 +81,11 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <Label className={lbl}>Photo URL <span className="text-zinc-600">(optional)</span></Label>
-        <Input {...register('photo')} type="url" className={f} placeholder="https://…" />
+        <Label className={lbl}>Photo <span className="text-zinc-600">(optional)</span></Label>
+        <ImageUploadField
+          value={watch('photo') ?? ''}
+          onChange={url => setValue('photo', url, { shouldValidate: true })}
+        />
         {errors.photo && <p className={err}>{errors.photo.message}</p>}
       </div>
 

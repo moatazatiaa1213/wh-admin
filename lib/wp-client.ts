@@ -85,21 +85,30 @@ function wpCredentials() {
  */
 export async function uploadTripImage(
   imageBuffer: Buffer,
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp',
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
   filename: string,
 ): Promise<{ id: number; url: string }> {
   const base = process.env.WP_BASE_URL
-  const res = await undiciFetch(`${base}/wp-json/wp/v2/media`, {
-    method: 'POST',
-    headers: {
-      Authorization:         `Basic ${wpCredentials()}`,
-      'Content-Type':        mimeType,
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'User-Agent':          WP_USER_AGENT,
-    },
-    body: imageBuffer,
-    ...(wpDispatcher ? { dispatcher: wpDispatcher } : {}),
-  } as UndiciRequestInit)
+  let res: Awaited<ReturnType<typeof undiciFetch>>
+  try {
+    res = await undiciFetch(`${base}/wp-json/wp/v2/media`, {
+      method: 'POST',
+      headers: {
+        Authorization:         `Basic ${wpCredentials()}`,
+        'Content-Type':        mimeType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'User-Agent':          WP_USER_AGENT,
+      },
+      body: imageBuffer,
+      signal: AbortSignal.timeout(20000),
+      ...(wpDispatcher ? { dispatcher: wpDispatcher } : {}),
+    } as UndiciRequestInit)
+  } catch (e) {
+    if (e instanceof Error && e.name === 'TimeoutError') {
+      throw new Error('Upload timed out, please try again')
+    }
+    throw e
+  }
   if (!res.ok) {
     const err = await res.text()
     throw new Error(`WP media upload failed (${res.status}): ${err}`)

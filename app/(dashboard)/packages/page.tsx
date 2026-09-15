@@ -4,6 +4,7 @@ import { Topbar } from '@/components/topbar'
 import { Button } from '@/components/ui/button'
 import { DeletePackageButton } from './delete-package-button'
 import { Plus, Pencil } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 export default async function PackagesPage() {
   const packages = await getPackages()
@@ -39,7 +40,7 @@ export default async function PackagesPage() {
                 <tr key={p.id} className="border-b border-[#1c1c1c] last:border-0 hover:bg-zinc-900/40 transition-colors">
                   <td className="px-5 py-3.5 text-sm font-medium text-zinc-200">{p.name}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{p.trip_title}</td>
-                  <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">${p.price.toLocaleString()}</td>
+                  <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">{formatCurrency(p.price)}</td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500">{p.max_people}</td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">

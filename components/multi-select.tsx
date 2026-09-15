@@ -75,7 +75,7 @@ export function MultiSelect({
             >
               {opt.imageUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={opt.imageUrl} alt="" className="w-4 h-4 rounded-full object-cover flex-shrink-0 bg-zinc-800" />
+                <img src={opt.imageUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 bg-zinc-800" />
               )}
               {opt.label}
               <button
@@ -148,7 +148,7 @@ export function MultiSelect({
                   </div>
                   {opt.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={opt.imageUrl} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0 bg-zinc-800" />
+                    <img src={opt.imageUrl} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0 bg-zinc-800" />
                   )}
                   <div>
                     <p className="text-sm text-zinc-200">{opt.label}</p>

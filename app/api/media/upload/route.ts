@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const result = await uploadTripImage(buffer, mimeType === 'image/gif' ? 'image/jpeg' : mimeType, file.name)
+    const result = await uploadTripImage(buffer, mimeType, file.name)
 
     return NextResponse.json({ id: result.id, url: result.url })
   } catch (e) {

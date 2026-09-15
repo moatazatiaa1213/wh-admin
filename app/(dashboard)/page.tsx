@@ -4,6 +4,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Globe, BookOpen, Users, Package, Plus } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 export default async function OverviewPage() {
   const [trips, bookings, customers, packages] = await Promise.all([
@@ -78,7 +79,7 @@ export default async function OverviewPage() {
                   {new Date(b.booking_date).toLocaleDateString()}
                 </td>
                 <td className="px-5 py-3.5"><StatusBadge status={b.status} /></td>
-                <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">${b.amount.toLocaleString()}</td>
+                <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">{formatCurrency(b.amount)}</td>
               </tr>
             ))}
           </tbody>

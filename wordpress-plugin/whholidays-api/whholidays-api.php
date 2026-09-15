@@ -889,7 +889,7 @@ function whh_shortcode_trips( array $atts ): string {
         // Image or emoji placeholder
         $img_html = $img
             ? "<img src='{$img}' alt='" . esc_attr( $t['title'] ) . "' class='whh-card-img' loading='lazy'>"
-            : '<div class="whh-card-img-placeholder">🌍</div>';
+            : '<div class="whh-card-img-placeholder"></div>';
 
         // Travel date range (no price)
         $date_str = '';
@@ -911,7 +911,7 @@ function whh_shortcode_trips( array $atts ): string {
             <div class='whh-card-body'>
                 <p class='whh-card-number'>" . esc_html( $t['trip_number'] ) . "</p>
                 <h3 class='whh-card-title'>{$title}</h3>"
-                . ( $date_str ? "<p class='whh-card-date'>🗓 {$date_str}</p>" : '' ) .
+                . ( $date_str ? "<p class='whh-card-date'>{$date_str}</p>" : '' ) .
                 "<div class='whh-card-cta'>View Details</div>
             </div>
         </a>";
@@ -995,7 +995,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( $dur || $t['destination'] ): ?>
                 <div class="whh-section">
-                    <h2>📋 Trip Info</h2>
+                    <h2>Trip Info</h2>
                     <?php if ( $t['destination'] ): ?>
                     <div class="whh-row"><strong>Destination</strong><span><?php echo esc_html( $t['destination'] ); ?></span></div>
                     <?php endif; ?>
@@ -1030,7 +1030,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( ! empty( $t['itinerary'] ) ): ?>
                 <div class="whh-section">
-                    <h2>🗓️ Itinerary</h2>
+                    <h2>Itinerary</h2>
                     <?php foreach ( $t['itinerary'] as $day ): ?>
                     <div class="whh-lib-item">
                         <strong>Day <?php echo (int) ( $day['day'] ?? 0 ); ?><?php echo ! empty( $day['title'] ) ? ' — ' . esc_html( $day['title'] ) : ''; ?></strong>
@@ -1101,7 +1101,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( ! empty( $packages ) ): ?>
                 <div class="whh-section">
-                    <h2>📦 Available Packages</h2>
+                    <h2>Available Packages</h2>
                     <?php foreach ( $packages as $pk ): ?>
                     <div class="whh-lib-item">
                         <strong><?php echo esc_html( $pk['name'] ); ?></strong> &mdash; EGP <?php echo number_format( (float)$pk['price'] ); ?>

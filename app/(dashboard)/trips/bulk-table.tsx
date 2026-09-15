@@ -9,7 +9,7 @@ import { AvailabilityToggle } from './availability-toggle'
 import { DeleteTripButton } from './delete-trip-button'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2, CheckCheck, X, FileDown } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatCurrency } from '@/lib/utils'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription,
@@ -171,7 +171,7 @@ export function BulkTable({ trips }: Props) {
                   className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-sky-500 cursor-pointer"
                 />
               </th>
-              {['Title', 'Destination', 'Dates', 'Adult Price', 'Duration', 'Status', 'Availability', 'Actions'].map(h => (
+              {['Trip #', 'Title', 'Destination', 'Dates', 'Adult Price', 'Duration', 'Status', 'Availability', 'Actions'].map(h => (
                 <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-5 py-3">
                   {h}
                 </th>
@@ -181,7 +181,7 @@ export function BulkTable({ trips }: Props) {
           <tbody>
             {trips.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-5 py-12 text-center text-sm text-zinc-500">
+                <td colSpan={10} className="px-5 py-12 text-center text-sm text-zinc-500">
                   No trips found.
                 </td>
               </tr>
@@ -199,6 +199,7 @@ export function BulkTable({ trips }: Props) {
                     className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-sky-500 cursor-pointer"
                   />
                 </td>
+                <td className="px-5 py-3.5 text-sm font-mono text-zinc-400">{trip.trip_number}</td>
                 <td className="px-5 py-3.5">
                   <p className="text-sm font-medium text-zinc-200">{trip.title}</p>
                 </td>
@@ -207,7 +208,7 @@ export function BulkTable({ trips }: Props) {
                   {formatDate(trip.travel_date)}
                 </td>
                 <td className="px-5 py-3.5 text-sm font-semibold text-zinc-200">
-                  {trip.price_adult ? `$${Number(trip.price_adult).toLocaleString()}` : '—'}
+                  {formatCurrency(trip.price_adult)}
                 </td>
                 <td className="px-5 py-3.5 text-sm text-zinc-500">
                   {trip.duration_days} Days / {trip.duration_nights} Nights

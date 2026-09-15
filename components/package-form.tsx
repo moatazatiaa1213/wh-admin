@@ -81,7 +81,7 @@ export function PackageForm({ pkg, trips }: PackageFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={labelClass}>Price (USD)</Label>
+          <Label className={labelClass}>Price (EGP)</Label>
           <Input {...register('price')} type="number" min="0" step="0.01" className={fieldClass} placeholder="1200" />
           {errors.price && <p className={errorClass}>{errors.price.message}</p>}
         </div>

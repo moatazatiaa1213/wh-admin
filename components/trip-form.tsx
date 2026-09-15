@@ -204,7 +204,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
         </div>
         <div className="space-y-1.5">
           <Label className={lbl}>Trip Number</Label>
-          <Input {...register('trip_number')} className={f} placeholder="e.g. WH-001" />
+          <Input {...register('trip_number')} className={`${f} text-lg font-semibold`} placeholder="e.g. WH-001" />
           {errors.trip_number && <p className={err}>{errors.trip_number.message}</p>}
         </div>
       </div>
@@ -305,7 +305,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       </div>
 
       {/* ── Pricing ── */}
-      <SectionHeader title="Pricing (USD)" />
+      <SectionHeader title="Pricing (EGP)" />
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">

@@ -179,7 +179,7 @@ const s = StyleSheet.create({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmt(v: number) {
-  return v ? `$${Number(v).toLocaleString()}` : '—'
+  return v ? `${Number(v).toLocaleString()} EGP` : '—'
 }
 
 // ─── Document component ───────────────────────────────────────────────────────
