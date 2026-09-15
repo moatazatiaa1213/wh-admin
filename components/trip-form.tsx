@@ -31,7 +31,11 @@ const tripSchema = z.object({
   trip_number: z.string().min(1, 'Trip number is required'),
   description: z.string().min(1, 'Description is required'),
   destination: z.string().min(1, 'Destination is required'),
-  trip_category: z.enum(TRIP_CATEGORIES).optional(),
+  // WordPress returns '' (not undefined) for trips without a category set —
+  // must accept '' explicitly, same as featured_image below, or zod rejects
+  // it silently (no rendered error for this field) and the whole form
+  // fails to submit with no visible feedback.
+  trip_category: z.enum(TRIP_CATEGORIES).or(z.literal('')).optional(),
   travel_date: z.string().min(1, 'Travel date is required'),
   end_date: z.string().min(1, 'End date is required'),
   duration_days: z.coerce.number().int().nonnegative(),
@@ -90,7 +94,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       trip_number: trip?.trip_number ?? nextTripNumber ?? '',
       description: trip?.description ?? '',
       destination: trip?.destination ?? '',
-      trip_category: trip?.trip_category,
+      trip_category: trip?.trip_category || undefined,
       travel_date: trip?.travel_date ?? '',
       end_date: trip?.end_date ?? '',
       duration_days: trip?.duration_days ?? undefined,
