@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
+import { prepareImageForUpload } from '@/lib/downscale-image'
 
 interface Props {
   value: string
@@ -20,18 +21,26 @@ export function ImageUploadField({ value, onChange }: Props) {
   const [dragOver, setDragOver]   = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  async function handleFile(file: File) {
+  async function handleFile(rawFile: File) {
     setUploading(true)
     setError('')
     try {
+      const file = await prepareImageForUpload(rawFile)
       const fd  = new FormData()
       fd.append('file', file)
       const res  = await fetch('/api/media/upload', { method: 'POST', body: fd })
-      const data = await res.json() as { id?: number; url?: string; error?: string }
+      let data: { id?: number; url?: string; error?: string }
+      try {
+        data = await res.json()
+      } catch {
+        // A non-JSON response means the platform rejected the request before
+        // our route ran (e.g. still over the host's own body-size limit).
+        throw new Error('Upload failed — the file may still be too large. Please try a smaller image.')
+      }
       if (!res.ok) throw new Error(data.error ?? 'Upload failed')
       onChange(data.url ?? '', data.id)
     } catch (e) {
-      setError(String(e))
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setUploading(false)
     }

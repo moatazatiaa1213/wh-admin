@@ -13,6 +13,14 @@ define( 'WHH_NS', 'whholidays/v1' );
 // Flush rewrite rules on activation so REST routes register immediately.
 register_activation_hook( __FILE__, function () { flush_rewrite_rules(); } );
 
+// ─── Full-resolution, full-quality image uploads ───────────────────────────
+// By default WordPress silently downscales any upload wider/taller than
+// 2560px (big_image_size_threshold) and re-compresses JPEGs to ~82% quality.
+// Admins uploading trip photos expect what they uploaded, so disable both.
+add_filter( 'big_image_size_threshold', '__return_false' );
+add_filter( 'jpeg_quality',             fn() => 100 );
+add_filter( 'wp_editor_set_quality',    fn() => 100 );
+
 // ─── Register all routes ──────────────────────────────────────────────────────
 
 add_action( 'rest_api_init', function () {
