@@ -1018,7 +1018,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( ! empty( $cities ) ): ?>
                 <div class="whh-section">
-                    <h2>🌍 Destinations</h2>
+                    <h2>Destinations</h2>
                     <?php foreach ( $cities as $i => $c ):
                         $c_name = esc_html( $c['name'] . ', ' . $c['country'] );
                         $c_map  = ! empty( $c['map_url'] ) ? esc_url( $c['map_url'] ) : '';
@@ -1050,7 +1050,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( ! empty( $hotels ) ): ?>
                 <div class="whh-section">
-                    <h2>🏨 Hotels</h2>
+                    <h2>Hotels</h2>
                     <?php foreach ( $hotels as $i => $h ):
                         $h_name = esc_html( $h['name'] );
                         $h_map  = ! empty( $h['map_url'] ) ? esc_url( $h['map_url'] ) : '';
@@ -1070,7 +1070,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( ! empty( $airlines ) ): ?>
                 <div class="whh-section">
-                    <h2>✈️ Airlines</h2>
+                    <h2>Airlines</h2>
                     <?php foreach ( $airlines as $a ):
                         $baggage_parts = [];
                         if ( ! empty( $a['checked_bags_count'] ) && ! empty( $a['checked_bags_weight_kg'] ) ) {
@@ -1097,7 +1097,7 @@ function whh_render_detail( array $t ): string {
 
                 <?php if ( ! empty( $excursions ) ): ?>
                 <div class="whh-section">
-                    <h2>🎯 Excursions</h2>
+                    <h2>Excursions</h2>
                     <?php foreach ( $excursions as $ex ): ?>
                     <div class="whh-lib-item">
                         <strong><?php echo esc_html( $ex['name'] ); ?></strong>
