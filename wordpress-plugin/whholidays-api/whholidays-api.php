@@ -21,6 +21,17 @@ add_filter( 'big_image_size_threshold', '__return_false' );
 add_filter( 'jpeg_quality',             fn() => 100 );
 add_filter( 'wp_editor_set_quality',    fn() => 100 );
 
+// ─── Drop the theme's broken IE-only html5shiv ──────────────────────────────
+// The traveltour/Tourmaster theme enqueues "tourmaster-html5js" wrapped in an
+// IE-conditional-comment, pointing at a js/html5.js file that doesn't exist
+// on this server. No supported browser honours IE conditional comments (WP
+// 6.9 deprecated the feature outright), so the script is pure dead weight —
+// it only produces a 404 and Query Monitor warnings. Drop it site-wide.
+add_action( 'wp_enqueue_scripts', function () {
+    wp_dequeue_script( 'tourmaster-html5js' );
+    wp_deregister_script( 'tourmaster-html5js' );
+}, 100 );
+
 // ─── Register all routes ──────────────────────────────────────────────────────
 
 add_action( 'rest_api_init', function () {
