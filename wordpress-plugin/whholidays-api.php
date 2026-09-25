@@ -743,7 +743,7 @@ function whh_print_styles(): void {
     .whh-detail-heading { margin-bottom: 24px; }
     .whh-detail-number {
         display: inline-block;
-        font-size: 12px; font-weight: 800;
+        font-size: 22px; font-weight: 800;
         color: #c9a227; letter-spacing: 1.4px;
         text-transform: uppercase; margin-bottom: 6px;
     }
