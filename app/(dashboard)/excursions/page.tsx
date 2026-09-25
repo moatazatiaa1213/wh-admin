@@ -26,7 +26,7 @@ export default async function ExcursionsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1c1c1c]">
-              {['Name', 'Description', 'Actions'].map(h => (
+              {['Name', 'Description', 'Included', 'Actions'].map(h => (
                 <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-5 py-3">
                   {h}
                 </th>
@@ -36,7 +36,7 @@ export default async function ExcursionsPage() {
           <tbody>
             {excursions.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-5 py-12 text-center text-sm text-zinc-500">
+                <td colSpan={4} className="px-5 py-12 text-center text-sm text-zinc-500">
                   No excursions found. Add one to get started.
                 </td>
               </tr>
@@ -48,6 +48,17 @@ export default async function ExcursionsPage() {
                   </td>
                   <td className="px-5 py-3.5 text-sm text-zinc-500 max-w-[420px]">
                     <p className="truncate">{excursion.description}</p>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    {excursion.included ? (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400">
+                        Included
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-800/60 text-amber-400">
+                        {excursion.price ? `+EGP ${excursion.price.toLocaleString()}` : 'Not Included'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2">

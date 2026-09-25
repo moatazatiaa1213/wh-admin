@@ -527,7 +527,7 @@ export async function handleConvStep(
     if (step === 'description') {
       await clearConvState(chatId)
       try {
-        await createExcursion({ name: data.name, description: input })
+        await createExcursion({ name: data.name, description: input, included: true })
         await sendKeyboard(
           chatId,
           `✅ <b>Excursion created!</b>\n\n<b>${data.name}</b>\n${input}`,

@@ -34,6 +34,8 @@ export interface Excursion {
   name: string
   description: string
   photo?: string
+  included: boolean   // whether this excursion is included in the trip price
+  price?: number       // extra cost (EGP) when not included
 }
 
 // ─── Core types ───────────────────────────────────────────────────────────────

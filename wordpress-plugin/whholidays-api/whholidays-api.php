@@ -789,6 +789,13 @@ function whh_print_styles(): void {
     .whh-lib-sub { color: #888; font-size: 12px; display: block; margin-top: 3px; }
     .whh-lib-item-media, .whh-row-media { display: flex; align-items: center; gap: 12px; }
     .whh-lib-thumb { width: 88px; height: 88px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .whh-excursion-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .whh-pill {
+        display: inline-block; font-size: 11px; font-weight: 700;
+        padding: 3px 10px; border-radius: 999px; letter-spacing: 0.2px;
+    }
+    .whh-pill-included     { background: #e8f7ee; color: #1a9a5c; }
+    .whh-pill-not-included { background: #fdf1e0; color: #b8790f; }
 
     /* Sidebar */
     .whh-sidebar-box {
@@ -1098,9 +1105,19 @@ function whh_render_detail( array $t ): string {
                 <?php if ( ! empty( $excursions ) ): ?>
                 <div class="whh-section">
                     <h2>Excursions</h2>
-                    <?php foreach ( $excursions as $ex ): ?>
+                    <?php foreach ( $excursions as $ex ):
+                        // Excursions saved before this field existed default to included.
+                        $ex_included = ! isset( $ex['included'] ) || ! empty( $ex['included'] );
+                    ?>
                     <div class="whh-lib-item">
-                        <strong><?php echo esc_html( $ex['name'] ); ?></strong>
+                        <div class="whh-excursion-head">
+                            <strong><?php echo esc_html( $ex['name'] ); ?></strong>
+                            <?php if ( $ex_included ): ?>
+                                <span class="whh-pill whh-pill-included">Included</span>
+                            <?php else: ?>
+                                <span class="whh-pill whh-pill-not-included">Not Included<?php echo ! empty( $ex['price'] ) ? ' &mdash; EGP ' . number_format( (float) $ex['price'] ) : ''; ?></span>
+                            <?php endif; ?>
+                        </div>
                         <?php if ( ! empty( $ex['description'] ) ): ?><span class="whh-lib-sub"><?php echo esc_html( $ex['description'] ); ?></span><?php endif; ?>
                     </div>
                     <?php endforeach; ?>
