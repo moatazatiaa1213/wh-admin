@@ -12,24 +12,23 @@ interface InclusionSelectProps {
   className?: string
 }
 
-// Shared Excluded / Included (Free) / Included (Price) picker, with the
-// price field only shown when a price is actually meaningful (i.e. not for
-// a free inclusion). Used for the Excursion library default, per-trip
-// excursion overrides, and per-day itinerary inclusion.
+// Shared Excluded / Included picker. Excluded reveals an optional add-on
+// price (e.g. "book this separately for EGP 500") — left blank, it's just
+// excluded with nothing to add on. Used for the Excursion library default,
+// per-trip excursion overrides, and per-day itinerary inclusion.
 export function InclusionSelect({ status, price, onStatusChange, onPriceChange, className }: InclusionSelectProps) {
   const f = 'bg-[#09090b] border-[#1c1c1c] text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-sky-500'
-  const showPrice = status !== 'included_free'
+  const showPrice = status === 'excluded'
 
   return (
     <div className={`flex items-center gap-2 ${className ?? ''}`}>
       <Select value={status} onValueChange={val => onStatusChange(val as InclusionStatus)}>
-        <SelectTrigger className={`${f} h-8 w-[160px] shrink-0`}>
+        <SelectTrigger className={`${f} h-8 w-[140px] shrink-0`}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-[#111111] border-[#1c1c1c]">
           <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
-          <SelectItem value="included_free" className="text-zinc-300 focus:bg-zinc-800">Included (Free)</SelectItem>
-          <SelectItem value="included_paid" className="text-zinc-300 focus:bg-zinc-800">Included (Price)</SelectItem>
+          <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
         </SelectContent>
       </Select>
       {showPrice && (
@@ -38,8 +37,8 @@ export function InclusionSelect({ status, price, onStatusChange, onPriceChange, 
           min={0}
           value={price ?? ''}
           onChange={e => onPriceChange(e.target.value === '' ? undefined : Number(e.target.value))}
-          className={`${f} h-8 w-[110px]`}
-          placeholder="EGP"
+          className={`${f} h-8 w-[130px]`}
+          placeholder="Add-on EGP"
         />
       )}
     </div>

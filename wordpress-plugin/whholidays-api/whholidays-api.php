@@ -234,19 +234,23 @@ function whh_meta_json( int $post_id, string $key ): array {
     return is_array( $decoded ) ? $decoded : [];
 }
 
-// Normalizes an inclusion value into one of 'excluded' | 'included_free' |
-// 'included_paid'. Accepts the current string status, the older boolean
-// (true => included_free, false => excluded) from before this 3-state model
-// existed, or nothing at all (defaults to included_free, the same default
-// the old boolean model used).
+// Normalizes an inclusion value into 'excluded' or 'included'. Accepts the
+// current string status, the older boolean (true => included, false =>
+// excluded) from before this field existed, or the short-lived 3-state
+// strings ('included_free'/'included_paid') from a version of this plugin
+// that briefly shipped between those two, or nothing at all (defaults to
+// included, the same default every earlier version used).
 function whh_inclusion_status( $raw ): string {
-    if ( is_string( $raw ) && in_array( $raw, [ 'excluded', 'included_free', 'included_paid' ], true ) ) {
-        return $raw;
+    if ( $raw === 'excluded' ) {
+        return 'excluded';
+    }
+    if ( $raw === 'included' || $raw === 'included_free' || $raw === 'included_paid' ) {
+        return 'included';
     }
     if ( is_bool( $raw ) ) {
-        return $raw ? 'included_free' : 'excluded';
+        return $raw ? 'included' : 'excluded';
     }
-    return 'included_free';
+    return 'included';
 }
 
 // The 8 curated tour-destination taxonomy terms (mirrors lib/types.ts
@@ -1087,8 +1091,6 @@ function whh_render_detail( array $t ): string {
                             <strong>Day <?php echo (int) ( $day['day'] ?? 0 ); ?><?php echo ! empty( $day['title'] ) ? ' — ' . esc_html( $day['title'] ) : ''; ?></strong>
                             <?php if ( $day_status === 'excluded' ): ?>
                                 <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $day['price'] ) ? ' &mdash; EGP ' . number_format( (float) $day['price'] ) : ''; ?></span>
-                            <?php elseif ( $day_status === 'included_paid' ): ?>
-                                <span class="whh-pill whh-pill-included">Included<?php echo ! empty( $day['price'] ) ? ' &mdash; EGP ' . number_format( (float) $day['price'] ) : ''; ?></span>
                             <?php else: ?>
                                 <span class="whh-pill whh-pill-included">Included</span>
                             <?php endif; ?>
@@ -1150,11 +1152,12 @@ function whh_render_detail( array $t ): string {
                 <div class="whh-section">
                     <h2>Excursions</h2>
                     <?php foreach ( $excursions as $ex ):
-                        // Inclusion (and price) is decided per trip — the same excursion
-                        // can be free on one trip and a paid extra on another. Resolve in
-                        // priority order: this trip's new-format override, this trip's
-                        // legacy boolean override (older plugin version), then the
-                        // excursion library item's own default.
+                        // Inclusion (and its optional add-on price when excluded) is
+                        // decided per trip — the same excursion can be included on one
+                        // trip and a paid add-on on another. Resolve in priority order:
+                        // this trip's new-format override, this trip's legacy boolean
+                        // override (older plugin version), then the excursion library
+                        // item's own default.
                         $ex_id   = $ex['id'] ?? '';
                         $new_ovr = $t['excursion_inclusion'][ $ex_id ] ?? null;
                         $old_ovr = $t['excursion_included'][ $ex_id ]  ?? null;
@@ -1174,8 +1177,6 @@ function whh_render_detail( array $t ): string {
                             <strong><?php echo esc_html( $ex['name'] ); ?></strong>
                             <?php if ( $ex_status === 'excluded' ): ?>
                                 <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $ex_price ) ? ' &mdash; EGP ' . number_format( (float) $ex_price ) : ''; ?></span>
-                            <?php elseif ( $ex_status === 'included_paid' ): ?>
-                                <span class="whh-pill whh-pill-included">Included<?php echo ! empty( $ex_price ) ? ' &mdash; EGP ' . number_format( (float) $ex_price ) : ''; ?></span>
                             <?php else: ?>
                                 <span class="whh-pill whh-pill-included">Included</span>
                             <?php endif; ?>

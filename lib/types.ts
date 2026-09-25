@@ -29,10 +29,10 @@ export interface Airline {
   carry_on_weight_kg?: number
 }
 
-// Three-way inclusion state used for both itinerary days and excursions:
-// dropped entirely, included at no extra cost, or included with a price tag
-// (e.g. an optional paid activity that's still on the schedule).
-export type InclusionStatus = 'excluded' | 'included_free' | 'included_paid'
+// Inclusion state used for both itinerary days and excursions. `price` only
+// applies when `excluded` — an optional add-on amount for booking it
+// separately; left unset, it's just excluded with nothing to add on.
+export type InclusionStatus = 'excluded' | 'included'
 
 export interface Excursion {
   id: string
@@ -40,7 +40,7 @@ export interface Excursion {
   description: string
   photo?: string
   inclusion: InclusionStatus   // default used when this excursion is added to a trip
-  price?: number                // EGP amount when inclusion is 'excluded' or 'included_paid'
+  price?: number                // optional add-on EGP amount, only when inclusion is 'excluded'
 }
 
 // ─── Core types ───────────────────────────────────────────────────────────────
@@ -92,10 +92,11 @@ export interface Trip {
   airline_ids: string[]
   excursion_ids: string[]
 
-  // Inclusion status (and price, when applicable) of each selected excursion
-  // in THIS trip, keyed by excursion id. Decided per trip (the same
-  // excursion can be free on one trip and a paid extra on another), not on
-  // the Excursion library item itself — see components/trip-form.tsx.
+  // Inclusion status (and optional add-on price, when excluded) of each
+  // selected excursion in THIS trip, keyed by excursion id. Decided per trip
+  // (the same excursion can be included on one trip and a paid add-on on
+  // another), not on the Excursion library item itself — see
+  // components/trip-form.tsx.
   excursion_inclusion: Record<string, { status: InclusionStatus; price?: number }>
 
   // Nights stayed per city (city_id -> nights); duration_nights/duration_days

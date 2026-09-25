@@ -141,11 +141,11 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   // (same pattern as cityNights above; not part of the zod schema) ──────────
   type ItineraryDay = { day: number; title: string; description: string; inclusion: InclusionStatus; price?: number }
   const [itinerary, setItinerary] = useState<ItineraryDay[]>(
-    (trip?.itinerary ?? []).map(d => ({ ...d, inclusion: d.inclusion ?? 'included_free' }))
+    (trip?.itinerary ?? []).map(d => ({ ...d, inclusion: d.inclusion ?? 'included' }))
   )
 
   function addDay() {
-    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', inclusion: 'included_free' }])
+    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', inclusion: 'included' }])
   }
   function removeDay(index: number) {
     setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })))
@@ -175,7 +175,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       const next: Record<string, ExcursionInclusion> = {}
       for (const id of excursionIds) {
         const libExcursion = excursions.find(e => e.id === id)
-        next[id] = prev[id] ?? { status: libExcursion?.inclusion ?? 'included_free', price: libExcursion?.price }
+        next[id] = prev[id] ?? { status: libExcursion?.inclusion ?? 'included', price: libExcursion?.price }
       }
       return next
     })
@@ -474,7 +474,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           <Label className={lbl}>Included in This Trip?</Label>
           {excursionIds.map(id => {
             const excursion = excursions.find(e => e.id === id)
-            const entry = excursionInclusion[id] ?? { status: 'included_free' as InclusionStatus }
+            const entry = excursionInclusion[id] ?? { status: 'included' as InclusionStatus }
             return (
               <div key={id} className="flex items-center justify-between gap-3 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-2">
                 <span className="text-sm text-zinc-300">{excursion?.name ?? id}</span>

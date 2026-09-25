@@ -17,7 +17,7 @@ const excursionSchema = z.object({
   name: z.string().min(1, 'Required'),
   description: z.string().min(1, 'Required'),
   photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  inclusion: z.enum(['excluded', 'included_free', 'included_paid']),
+  inclusion: z.enum(['excluded', 'included']),
   price: z.coerce.number().min(0).optional(),
 })
 
@@ -44,7 +44,7 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
       name: excursion?.name ?? '',
       description: excursion?.description ?? '',
       photo: excursion?.photo ?? '',
-      inclusion: excursion?.inclusion ?? 'included_free',
+      inclusion: excursion?.inclusion ?? 'included',
       price: excursion?.price,
     },
   })

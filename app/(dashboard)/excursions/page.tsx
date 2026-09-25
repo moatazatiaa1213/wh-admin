@@ -56,9 +56,7 @@ export default async function ExcursionsPage() {
                       </span>
                     ) : (
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400">
-                        {excursion.inclusion === 'included_paid' && excursion.price
-                          ? `Included — EGP ${excursion.price.toLocaleString()}`
-                          : 'Included'}
+                        Included
                       </span>
                     )}
                   </td>
