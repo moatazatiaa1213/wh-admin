@@ -20,9 +20,10 @@ import {
 import { MultiSelect }        from '@/components/multi-select'
 import { ImageUploadField }   from '@/components/image-upload-field'
 import { DatePicker } from '@/components/date-picker'
+import { InclusionSelect } from '@/components/inclusion-select'
 import { formatBaggage } from '@/lib/format-baggage'
 import { TRIP_CATEGORIES } from '@/lib/types'
-import type { Trip, City, Hotel, Airline, Excursion, TripCategory } from '@/lib/types'
+import type { Trip, City, Hotel, Airline, Excursion, TripCategory, InclusionStatus } from '@/lib/types'
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -138,13 +139,13 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
 
   // ── Day-by-day itinerary — plain state, merged into the payload on submit
   // (same pattern as cityNights above; not part of the zod schema) ──────────
-  type ItineraryDay = { day: number; title: string; description: string; included: boolean }
+  type ItineraryDay = { day: number; title: string; description: string; inclusion: InclusionStatus; price?: number }
   const [itinerary, setItinerary] = useState<ItineraryDay[]>(
-    (trip?.itinerary ?? []).map(d => ({ ...d, included: d.included ?? true }))
+    (trip?.itinerary ?? []).map(d => ({ ...d, inclusion: d.inclusion ?? 'included_free' }))
   )
 
   function addDay() {
-    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', included: true }])
+    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', inclusion: 'included_free' }])
   }
   function removeDay(index: number) {
     setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })))
@@ -152,24 +153,29 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   function updateDay(index: number, field: 'title' | 'description', value: string) {
     setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)))
   }
-  function updateDayIncluded(index: number, included: boolean) {
-    setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, included } : d)))
+  function updateDayInclusion(index: number, inclusion: InclusionStatus) {
+    setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, inclusion } : d)))
+  }
+  function updateDayPrice(index: number, price: number | undefined) {
+    setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, price } : d)))
   }
 
-  // ── Per-trip excursion inclusion — whether each selected excursion is
-  // included in THIS trip's price or a paid extra. Same plain-state pattern
-  // as cityNights/itinerary. New selections default from the excursion
-  // library item's own `included` flag. ──────────────────────────────────
-  const [excursionIncluded, setExcursionIncluded] = useState<Record<string, boolean>>(
-    trip?.excursion_included ?? {}
+  // ── Per-trip excursion inclusion — the status (and price, if any) of each
+  // selected excursion in THIS trip. Same plain-state pattern as
+  // cityNights/itinerary. New selections default from the excursion
+  // library item's own inclusion/price. ────────────────────────────────────
+  type ExcursionInclusion = { status: InclusionStatus; price?: number }
+  const [excursionInclusion, setExcursionInclusion] = useState<Record<string, ExcursionInclusion>>(
+    trip?.excursion_inclusion ?? {}
   )
   const excursionIds = watch('excursion_ids')
 
   useEffect(() => {
-    setExcursionIncluded(prev => {
-      const next: Record<string, boolean> = {}
+    setExcursionInclusion(prev => {
+      const next: Record<string, ExcursionInclusion> = {}
       for (const id of excursionIds) {
-        next[id] = prev[id] ?? excursions.find(e => e.id === id)?.included ?? true
+        const libExcursion = excursions.find(e => e.id === id)
+        next[id] = prev[id] ?? { status: libExcursion?.inclusion ?? 'included_free', price: libExcursion?.price }
       }
       return next
     })
@@ -193,7 +199,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           ...data,
           city_nights: cityNights,
           itinerary,
-          excursion_included: excursionIncluded,
+          excursion_inclusion: excursionInclusion,
           ...(featuredImageId ? { featured_image_id: featuredImageId } : {}),
         }),
       })
@@ -468,21 +474,16 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           <Label className={lbl}>Included in This Trip?</Label>
           {excursionIds.map(id => {
             const excursion = excursions.find(e => e.id === id)
+            const entry = excursionInclusion[id] ?? { status: 'included_free' as InclusionStatus }
             return (
               <div key={id} className="flex items-center justify-between gap-3 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-2">
                 <span className="text-sm text-zinc-300">{excursion?.name ?? id}</span>
-                <Select
-                  value={excursionIncluded[id] ? 'included' : 'excluded'}
-                  onValueChange={val => setExcursionIncluded(prev => ({ ...prev, [id]: val === 'included' }))}
-                >
-                  <SelectTrigger className={`${f} h-8 w-[140px]`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#111111] border-[#1c1c1c]">
-                    <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
-                    <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
-                  </SelectContent>
-                </Select>
+                <InclusionSelect
+                  status={entry.status}
+                  price={entry.price}
+                  onStatusChange={status => setExcursionInclusion(prev => ({ ...prev, [id]: { ...prev[id], status } }))}
+                  onPriceChange={price => setExcursionInclusion(prev => ({ ...prev, [id]: { ...prev[id], price } }))}
+                />
               </div>
             )
           })}
@@ -498,18 +499,12 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
             <div className="flex items-center justify-between gap-3">
               <span className="text-xs font-semibold text-zinc-400 whitespace-nowrap">Day {dayItem.day}</span>
               <div className="flex items-center gap-3">
-                <Select
-                  value={dayItem.included ? 'included' : 'excluded'}
-                  onValueChange={val => updateDayIncluded(index, val === 'included')}
-                >
-                  <SelectTrigger className={`${f} h-8 w-[140px]`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#111111] border-[#1c1c1c]">
-                    <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
-                    <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
-                  </SelectContent>
-                </Select>
+                <InclusionSelect
+                  status={dayItem.inclusion}
+                  price={dayItem.price}
+                  onStatusChange={inclusion => updateDayInclusion(index, inclusion)}
+                  onPriceChange={price => updateDayPrice(index, price)}
+                />
                 <button
                   type="button"
                   onClick={() => removeDay(index)}

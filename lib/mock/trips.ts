@@ -1,4 +1,4 @@
-﻿import { Trip } from '@/lib/types'
+import { Trip } from '@/lib/types'
 
 export const mockTrips: Trip[] = [
   {
@@ -24,11 +24,11 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-1', 'hotel-2'],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-1', 'exc-2'],
-    excursion_included: { 'exc-1': true, 'exc-2': true },
+    excursion_inclusion: { 'exc-1': { status: 'included_free' }, 'exc-2': { status: 'included_free' } },
     itinerary: [
-      { day: 1, title: 'Arrival in Hunza', description: 'Arrive at Gilgit airport, transfer to Hunza, evening at leisure.', included: true },
-      { day: 2, title: 'Attabad Lake & Karimabad', description: 'Boat ride on Attabad Lake, explore Karimabad bazaar.', included: true },
-      { day: 3, title: 'Baltit Fort & Eagle\'s Nest', description: 'Visit Baltit Fort and sunrise viewpoint at Eagle\'s Nest.', included: true },
+      { day: 1, title: 'Arrival in Hunza', description: 'Arrive at Gilgit airport, transfer to Hunza, evening at leisure.', inclusion: 'included_free' },
+      { day: 2, title: 'Attabad Lake & Karimabad', description: 'Boat ride on Attabad Lake, explore Karimabad bazaar.', inclusion: 'included_free' },
+      { day: 3, title: 'Baltit Fort & Eagle\'s Nest', description: 'Visit Baltit Fort and sunrise viewpoint at Eagle\'s Nest.', inclusion: 'included_free' },
     ],
   },
   {
@@ -54,10 +54,10 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-4'],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-4'],
-    excursion_included: { 'exc-4': false },
+    excursion_inclusion: { 'exc-4': { status: 'included_paid', price: 1200 } },
     itinerary: [
-      { day: 1, title: 'Arrival in Swat', description: 'Drive up to Swat, check in and relax by the river.', included: true },
-      { day: 2, title: 'Malam Jabba & Kalam', description: 'Chairlift ride at Malam Jabba, onward to Kalam valley.', included: false },
+      { day: 1, title: 'Arrival in Swat', description: 'Drive up to Swat, check in and relax by the river.', inclusion: 'included_free' },
+      { day: 2, title: 'Malam Jabba & Kalam', description: 'Chairlift ride at Malam Jabba, onward to Kalam valley.', inclusion: 'included_paid', price: 600 },
     ],
   },
   {
@@ -82,10 +82,10 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-3'],
     airline_ids: ['airline-1', 'airline-2'],
     excursion_ids: ['exc-3'],
-    excursion_included: { 'exc-3': false },
+    excursion_inclusion: { 'exc-3': { status: 'excluded', price: 1500 } },
     itinerary: [
-      { day: 1, title: 'Arrival in Skardu', description: 'Fly into Skardu, check in at Shangrila Resort.', included: true },
-      { day: 2, title: 'Satpara Lake & Deosai Plains', description: 'Visit Satpara Lake, drive up to the Deosai Plains.', included: false },
+      { day: 1, title: 'Arrival in Skardu', description: 'Fly into Skardu, check in at Shangrila Resort.', inclusion: 'included_free' },
+      { day: 2, title: 'Satpara Lake & Deosai Plains', description: 'Visit Satpara Lake, drive up to the Deosai Plains.', inclusion: 'excluded', price: 1500 },
     ],
   },
   {
@@ -109,7 +109,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-7'],
     airline_ids: [],
     excursion_ids: ['exc-7'],
-    excursion_included: { 'exc-7': false },
+    excursion_inclusion: { 'exc-7': { status: 'excluded', price: 800 } },
     itinerary: [],
   },
   {
@@ -133,7 +133,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-6'],
     airline_ids: ['airline-1'],
     excursion_ids: [],
-    excursion_included: {},
+    excursion_inclusion: {},
     itinerary: [],
   },
   {
@@ -157,7 +157,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-8'],
     airline_ids: [],
     excursion_ids: ['exc-8'],
-    excursion_included: { 'exc-8': true },
+    excursion_inclusion: { 'exc-8': { status: 'included_free' } },
     itinerary: [],
   },
   {
@@ -181,23 +181,23 @@ export const mockTrips: Trip[] = [
     hotel_ids: [],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-5'],
-    excursion_included: { 'exc-5': true },
+    excursion_inclusion: { 'exc-5': { status: 'included_free' } },
     // Long itinerary — useful for testing PDF brochure pagination/overflow.
     itinerary: [
-      { day: 1, title: 'Islamabad to Skardu', description: 'Fly or drive to Skardu, overnight briefing.', included: true },
-      { day: 2, title: 'Skardu to Askole', description: 'Jeep drive along the Braldu River to Askole, the trek\'s starting point.', included: true },
-      { day: 3, title: 'Askole to Jhola', description: 'Begin trekking, cross the Braldu River suspension bridge.', included: true },
-      { day: 4, title: 'Jhola to Paiju', description: 'Trek through Paiju forest, last vegetation before the glacier.', included: true },
-      { day: 5, title: 'Rest day at Paiju', description: 'Acclimatization day, prepare for glacier trekking.', included: true },
-      { day: 6, title: 'Paiju to Khoburtse', description: 'Onto the Baltoro Glacier, views of Trango Towers.', included: true },
-      { day: 7, title: 'Khoburtse to Concordia', description: 'Approach Concordia with views of Gasherbrum and Broad Peak.', included: true },
-      { day: 8, title: 'Concordia to K2 Base Camp', description: 'Trek to K2 Base Camp, first close view of K2.', included: true },
-      { day: 9, title: 'Rest day at K2 Base Camp', description: 'Explore base camp area, weather-dependent activities.', included: true },
-      { day: 10, title: 'K2 Base Camp to Concordia', description: 'Retrace the route back to Concordia.', included: true },
-      { day: 11, title: 'Concordia to Khoburtse', description: 'Descend the Baltoro Glacier.', included: true },
-      { day: 12, title: 'Khoburtse to Jhola', description: 'Continue descent through Paiju.', included: true },
-      { day: 13, title: 'Jhola to Askole', description: 'Final trekking day back to Askole.', included: true },
-      { day: 14, title: 'Askole to Skardu', description: 'Jeep drive back to Skardu, celebration dinner.', included: true },
+      { day: 1, title: 'Islamabad to Skardu', description: 'Fly or drive to Skardu, overnight briefing.', inclusion: 'included_free' },
+      { day: 2, title: 'Skardu to Askole', description: 'Jeep drive along the Braldu River to Askole, the trek\'s starting point.', inclusion: 'included_free' },
+      { day: 3, title: 'Askole to Jhola', description: 'Begin trekking, cross the Braldu River suspension bridge.', inclusion: 'included_free' },
+      { day: 4, title: 'Jhola to Paiju', description: 'Trek through Paiju forest, last vegetation before the glacier.', inclusion: 'included_free' },
+      { day: 5, title: 'Rest day at Paiju', description: 'Acclimatization day, prepare for glacier trekking.', inclusion: 'included_free' },
+      { day: 6, title: 'Paiju to Khoburtse', description: 'Onto the Baltoro Glacier, views of Trango Towers.', inclusion: 'included_free' },
+      { day: 7, title: 'Khoburtse to Concordia', description: 'Approach Concordia with views of Gasherbrum and Broad Peak.', inclusion: 'included_free' },
+      { day: 8, title: 'Concordia to K2 Base Camp', description: 'Trek to K2 Base Camp, first close view of K2.', inclusion: 'included_free' },
+      { day: 9, title: 'Rest day at K2 Base Camp', description: 'Explore base camp area, weather-dependent activities.', inclusion: 'included_free' },
+      { day: 10, title: 'K2 Base Camp to Concordia', description: 'Retrace the route back to Concordia.', inclusion: 'included_free' },
+      { day: 11, title: 'Concordia to Khoburtse', description: 'Descend the Baltoro Glacier.', inclusion: 'included_free' },
+      { day: 12, title: 'Khoburtse to Jhola', description: 'Continue descent through Paiju.', inclusion: 'included_free' },
+      { day: 13, title: 'Jhola to Askole', description: 'Final trekking day back to Askole.', inclusion: 'included_free' },
+      { day: 14, title: 'Askole to Skardu', description: 'Jeep drive back to Skardu, celebration dinner.', inclusion: 'included_free' },
     ],
   },
   {
@@ -221,7 +221,7 @@ export const mockTrips: Trip[] = [
     hotel_ids: ['hotel-5'],
     airline_ids: ['airline-1'],
     excursion_ids: ['exc-6'],
-    excursion_included: { 'exc-6': true },
+    excursion_inclusion: { 'exc-6': { status: 'included_free' } },
     itinerary: [],
   },
 ]

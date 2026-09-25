@@ -150,9 +150,10 @@ export async function POST(req: Request) {
           hotel_ids:     resolveNames(hotels,     cell(row, idx, 'hotels')),
           airline_ids:   resolveNames(airlines,   cell(row, idx, 'airlines')),
           excursion_ids: resolveNames(excursions, cell(row, idx, 'excursions')),
-          // Imported excursions default to included — no per-excursion inclusion
-          // column in the template; edit via the trip-form to mark any as extra.
-          excursion_included: {},
+          // Imported excursions default to each excursion's own library
+          // setting — no per-excursion inclusion column in the template;
+          // edit via the trip-form to override any of them per trip.
+          excursion_inclusion: {},
           // No per-city-nights column in the import template (see plan follow-up
           // note) — imported trips use duration_days/duration_nights directly.
           city_nights: {},

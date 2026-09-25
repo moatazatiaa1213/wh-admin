@@ -9,15 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { InclusionSelect } from '@/components/inclusion-select'
 import { ImageUploadField } from '@/components/image-upload-field'
-import type { Excursion } from '@/lib/types'
+import type { Excursion, InclusionStatus } from '@/lib/types'
 
 const excursionSchema = z.object({
   name: z.string().min(1, 'Required'),
   description: z.string().min(1, 'Required'),
   photo: z.string().url('Must be a valid URL').or(z.literal('')).optional(),
-  included: z.boolean(),
+  inclusion: z.enum(['excluded', 'included_free', 'included_paid']),
   price: z.coerce.number().min(0).optional(),
 })
 
@@ -44,12 +44,13 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
       name: excursion?.name ?? '',
       description: excursion?.description ?? '',
       photo: excursion?.photo ?? '',
-      included: excursion?.included ?? true,
+      inclusion: excursion?.inclusion ?? 'included_free',
       price: excursion?.price,
     },
   })
 
-  const included = watch('included')
+  const inclusion = watch('inclusion')
+  const price = watch('price')
 
   const mutation = useMutation({
     mutationFn: async (data: ExcursionFormValues) => {
@@ -96,30 +97,16 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
         {errors.photo && <p className={err}>{errors.photo.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label className={lbl}>Included by Default</Label>
-          <Select
-            defaultValue={included ? 'included' : 'excluded'}
-            onValueChange={val => setValue('included', val === 'included')}
-          >
-            <SelectTrigger className={f}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#111111] border-[#1c1c1c]">
-              <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
-              <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-[11px] text-zinc-600">Used as the starting value when this excursion is added to a trip — each trip can override it.</p>
-        </div>
-        {!included && (
-          <div className="space-y-1.5">
-            <Label className={lbl}>Extra Price (EGP)</Label>
-            <Input {...register('price')} type="number" min={0} className={f} placeholder="e.g. 1500" />
-            {errors.price && <p className={err}>{errors.price.message}</p>}
-          </div>
-        )}
+      <div className="space-y-1.5">
+        <Label className={lbl}>Included by Default</Label>
+        <InclusionSelect
+          status={inclusion}
+          price={price}
+          onStatusChange={(val: InclusionStatus) => setValue('inclusion', val)}
+          onPriceChange={val => setValue('price', val)}
+        />
+        {errors.price && <p className={err}>{errors.price.message}</p>}
+        <p className="text-[11px] text-zinc-600">Used as the starting value when this excursion is added to a trip — each trip can override it.</p>
       </div>
 
       {mutation.isError && (

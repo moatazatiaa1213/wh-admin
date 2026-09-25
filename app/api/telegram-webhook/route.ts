@@ -131,10 +131,10 @@ async function handleCallback(
           city_ids:        [],
           hotel_ids:       [],
           airline_ids:     [],
-          excursion_ids:      [],
-          excursion_included: {},
-          city_nights:        {},
-          itinerary:          [],
+          excursion_ids:       [],
+          excursion_inclusion: {},
+          city_nights:         {},
+          itinerary:           [],
           ...(featuredImageId ? { featured_image_id: featuredImageId } : {}),
         })
         await cacheInvalidate(pendingKey(chatId))

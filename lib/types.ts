@@ -29,13 +29,18 @@ export interface Airline {
   carry_on_weight_kg?: number
 }
 
+// Three-way inclusion state used for both itinerary days and excursions:
+// dropped entirely, included at no extra cost, or included with a price tag
+// (e.g. an optional paid activity that's still on the schedule).
+export type InclusionStatus = 'excluded' | 'included_free' | 'included_paid'
+
 export interface Excursion {
   id: string
   name: string
   description: string
   photo?: string
-  included: boolean   // whether this excursion is included in the trip price
-  price?: number       // extra cost (EGP) when not included
+  inclusion: InclusionStatus   // default used when this excursion is added to a trip
+  price?: number                // EGP amount when inclusion is 'excluded' or 'included_paid'
 }
 
 // ─── Core types ───────────────────────────────────────────────────────────────
@@ -87,11 +92,11 @@ export interface Trip {
   airline_ids: string[]
   excursion_ids: string[]
 
-  // Whether each selected excursion is included in this trip's price, keyed
-  // by excursion id. Decided per trip (the same excursion can be included on
-  // one trip and a paid extra on another), not on the Excursion library item
-  // itself — see components/trip-form.tsx.
-  excursion_included: Record<string, boolean>
+  // Inclusion status (and price, when applicable) of each selected excursion
+  // in THIS trip, keyed by excursion id. Decided per trip (the same
+  // excursion can be free on one trip and a paid extra on another), not on
+  // the Excursion library item itself — see components/trip-form.tsx.
+  excursion_inclusion: Record<string, { status: InclusionStatus; price?: number }>
 
   // Nights stayed per city (city_id -> nights); duration_nights/duration_days
   // are derived from this as the source of truth (see components/trip-form.tsx)
@@ -100,7 +105,7 @@ export interface Trip {
   // Day-by-day itinerary. Ordered by array position (day numbers are kept
   // sequential 1..N by the editor UI, not independently reorderable — see
   // components/trip-form.tsx).
-  itinerary: { day: number; title: string; description: string; included: boolean }[]
+  itinerary: { day: number; title: string; description: string; inclusion: InclusionStatus; price?: number }[]
 }
 
 export type TripInput = Omit<Trip, 'id' | 'created_at'> & {
