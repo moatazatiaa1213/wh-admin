@@ -788,7 +788,7 @@ function whh_print_styles(): void {
     }
     .whh-lib-sub { color: #888; font-size: 12px; display: block; margin-top: 3px; }
     .whh-lib-item-media, .whh-row-media { display: flex; align-items: center; gap: 12px; }
-    .whh-lib-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .whh-lib-thumb { width: 88px; height: 88px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
 
     /* Sidebar */
     .whh-sidebar-box {
