@@ -1090,7 +1090,7 @@ function whh_render_detail( array $t ): string {
                         <div class="whh-item-head">
                             <strong>Day <?php echo (int) ( $day['day'] ?? 0 ); ?><?php echo ! empty( $day['title'] ) ? ' — ' . esc_html( $day['title'] ) : ''; ?></strong>
                             <?php if ( $day_status === 'excluded' ): ?>
-                                <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $day['price'] ) ? ' &mdash; EGP ' . number_format( (float) $day['price'] ) : ''; ?></span>
+                                <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $day['price'] ) ? ' &mdash; +addon EGP ' . number_format( (float) $day['price'] ) : ''; ?></span>
                             <?php else: ?>
                                 <span class="whh-pill whh-pill-included">Included</span>
                             <?php endif; ?>
@@ -1176,7 +1176,7 @@ function whh_render_detail( array $t ): string {
                         <div class="whh-item-head">
                             <strong><?php echo esc_html( $ex['name'] ); ?></strong>
                             <?php if ( $ex_status === 'excluded' ): ?>
-                                <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $ex_price ) ? ' &mdash; EGP ' . number_format( (float) $ex_price ) : ''; ?></span>
+                                <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $ex_price ) ? ' &mdash; +addon EGP ' . number_format( (float) $ex_price ) : ''; ?></span>
                             <?php else: ?>
                                 <span class="whh-pill whh-pill-included">Included</span>
                             <?php endif; ?>

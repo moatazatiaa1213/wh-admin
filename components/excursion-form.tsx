@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { InclusionSelect } from '@/components/inclusion-select'
 import { ImageUploadField } from '@/components/image-upload-field'
+import { normalizeInclusion } from '@/lib/types'
 import type { Excursion, InclusionStatus } from '@/lib/types'
 
 const excursionSchema = z.object({
@@ -44,7 +45,7 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
       name: excursion?.name ?? '',
       description: excursion?.description ?? '',
       photo: excursion?.photo ?? '',
-      inclusion: excursion?.inclusion ?? 'included',
+      inclusion: normalizeInclusion(excursion?.inclusion),
       price: excursion?.price,
     },
   })

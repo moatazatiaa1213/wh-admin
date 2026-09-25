@@ -22,7 +22,7 @@ import { ImageUploadField }   from '@/components/image-upload-field'
 import { DatePicker } from '@/components/date-picker'
 import { InclusionSelect } from '@/components/inclusion-select'
 import { formatBaggage } from '@/lib/format-baggage'
-import { TRIP_CATEGORIES } from '@/lib/types'
+import { TRIP_CATEGORIES, normalizeInclusion } from '@/lib/types'
 import type { Trip, City, Hotel, Airline, Excursion, TripCategory, InclusionStatus } from '@/lib/types'
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   // (same pattern as cityNights above; not part of the zod schema) ──────────
   type ItineraryDay = { day: number; title: string; description: string; inclusion: InclusionStatus; price?: number }
   const [itinerary, setItinerary] = useState<ItineraryDay[]>(
-    (trip?.itinerary ?? []).map(d => ({ ...d, inclusion: d.inclusion ?? 'included' }))
+    (trip?.itinerary ?? []).map(d => ({ ...d, inclusion: normalizeInclusion(d.inclusion) }))
   )
 
   function addDay() {
@@ -166,7 +166,9 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   // library item's own inclusion/price. ────────────────────────────────────
   type ExcursionInclusion = { status: InclusionStatus; price?: number }
   const [excursionInclusion, setExcursionInclusion] = useState<Record<string, ExcursionInclusion>>(
-    trip?.excursion_inclusion ?? {}
+    Object.fromEntries(
+      Object.entries(trip?.excursion_inclusion ?? {}).map(([id, v]) => [id, { status: normalizeInclusion(v?.status), price: v?.price }])
+    )
   )
   const excursionIds = watch('excursion_ids')
 
@@ -175,7 +177,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       const next: Record<string, ExcursionInclusion> = {}
       for (const id of excursionIds) {
         const libExcursion = excursions.find(e => e.id === id)
-        next[id] = prev[id] ?? { status: libExcursion?.inclusion ?? 'included', price: libExcursion?.price }
+        next[id] = prev[id] ?? { status: normalizeInclusion(libExcursion?.inclusion), price: libExcursion?.price }
       }
       return next
     })

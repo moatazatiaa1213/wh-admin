@@ -34,6 +34,17 @@ export interface Airline {
 // separately; left unset, it's just excluded with nothing to add on.
 export type InclusionStatus = 'excluded' | 'included'
 
+// Coerces a stored inclusion value into the current 2-state model. Data
+// saved by an earlier version of this feature may still hold the old
+// boolean (true/false), or the short-lived 3-state strings
+// ('included_free'/'included_paid') — anything that isn't explicitly
+// 'excluded' (string) or `false` defaults to 'included', same as every
+// version of this field has always defaulted.
+export function normalizeInclusion(raw: unknown): InclusionStatus {
+  if (raw === 'excluded' || raw === false) return 'excluded'
+  return 'included'
+}
+
 export interface Excursion {
   id: string
   name: string
