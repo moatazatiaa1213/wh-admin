@@ -718,7 +718,7 @@ function whh_print_styles(): void {
         display: flex; flex-direction: column; flex: 1;
     }
     .whh-card-number {
-        font-size: 10px; font-weight: 800;
+        font-size: 25px; font-weight: 800;
         color: #c9a227; letter-spacing: 1.2px;
         text-transform: uppercase; margin: 0 0 5px;
     }
@@ -743,7 +743,7 @@ function whh_print_styles(): void {
     .whh-detail-heading { margin-bottom: 24px; }
     .whh-detail-number {
         display: inline-block;
-        font-size: 22px; font-weight: 800;
+        font-size: 25px; font-weight: 800;
         color: #c9a227; letter-spacing: 1.4px;
         text-transform: uppercase; margin-bottom: 6px;
     }
@@ -789,6 +789,7 @@ function whh_print_styles(): void {
     .whh-lib-sub { color: #888; font-size: 12px; display: block; margin-top: 3px; }
     .whh-lib-item-media, .whh-row-media { display: flex; align-items: center; gap: 12px; }
     .whh-lib-thumb { width: 88px; height: 88px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+    .whh-airline-thumb { object-fit: contain; background: #fff; border: 1px solid #eee; padding: 10px; box-sizing: border-box; }
     .whh-excursion-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .whh-pill {
         display: inline-block; font-size: 11px; font-weight: 700;
@@ -1091,7 +1092,7 @@ function whh_render_detail( array $t ): string {
                     ?>
                     <div class="whh-lib-item whh-lib-item-media">
                         <?php if ( ! empty( $a['photo'] ) ): ?>
-                            <img src="<?php echo esc_url( $a['photo'] ); ?>" alt="<?php echo esc_attr( $a['name'] ); ?>" class="whh-lib-thumb">
+                            <img src="<?php echo esc_url( $a['photo'] ); ?>" alt="<?php echo esc_attr( $a['name'] ); ?>" class="whh-lib-thumb whh-airline-thumb">
                         <?php endif; ?>
                         <div>
                             <strong><?php echo esc_html( $a['name'] ); ?></strong>
