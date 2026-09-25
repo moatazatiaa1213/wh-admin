@@ -87,6 +87,12 @@ export interface Trip {
   airline_ids: string[]
   excursion_ids: string[]
 
+  // Whether each selected excursion is included in this trip's price, keyed
+  // by excursion id. Decided per trip (the same excursion can be included on
+  // one trip and a paid extra on another), not on the Excursion library item
+  // itself — see components/trip-form.tsx.
+  excursion_included: Record<string, boolean>
+
   // Nights stayed per city (city_id -> nights); duration_nights/duration_days
   // are derived from this as the source of truth (see components/trip-form.tsx)
   city_nights: Record<string, number>
@@ -94,7 +100,7 @@ export interface Trip {
   // Day-by-day itinerary. Ordered by array position (day numbers are kept
   // sequential 1..N by the editor UI, not independently reorderable — see
   // components/trip-form.tsx).
-  itinerary: { day: number; title: string; description: string }[]
+  itinerary: { day: number; title: string; description: string; included: boolean }[]
 }
 
 export type TripInput = Omit<Trip, 'id' | 'created_at'> & {

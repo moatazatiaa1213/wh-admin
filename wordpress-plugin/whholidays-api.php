@@ -217,9 +217,10 @@ function whh_format_tour( WP_Post $post ): array {
         'city_ids'        => whh_meta_json( $id, 'whh-city-ids' ),
         'hotel_ids'       => whh_meta_json( $id, 'whh-hotel-ids' ),
         'airline_ids'     => whh_meta_json( $id, 'whh-airline-ids' ),
-        'excursion_ids'   => whh_meta_json( $id, 'whh-excursion-ids' ),
-        'city_nights'     => whh_meta_json( $id, 'whh-city-nights' ),
-        'itinerary'       => whh_meta_json( $id, 'whh-itinerary' ),
+        'excursion_ids'      => whh_meta_json( $id, 'whh-excursion-ids' ),
+        'excursion_included' => whh_meta_json( $id, 'whh-excursion-included' ),
+        'city_nights'        => whh_meta_json( $id, 'whh-city-nights' ),
+        'itinerary'          => whh_meta_json( $id, 'whh-itinerary' ),
     ];
 }
 
@@ -345,9 +346,10 @@ function whh_save_tour_meta( int $post_id, array $data ): void {
     if ( isset( $data['city_ids'] ) )      update_post_meta( $post_id, 'whh-city-ids',      wp_json_encode( $data['city_ids'] ) );
     if ( isset( $data['hotel_ids'] ) )     update_post_meta( $post_id, 'whh-hotel-ids',     wp_json_encode( $data['hotel_ids'] ) );
     if ( isset( $data['airline_ids'] ) )   update_post_meta( $post_id, 'whh-airline-ids',   wp_json_encode( $data['airline_ids'] ) );
-    if ( isset( $data['excursion_ids'] ) ) update_post_meta( $post_id, 'whh-excursion-ids', wp_json_encode( $data['excursion_ids'] ) );
-    if ( isset( $data['city_nights'] ) )   update_post_meta( $post_id, 'whh-city-nights',   wp_json_encode( $data['city_nights'] ) );
-    if ( isset( $data['itinerary'] ) )     update_post_meta( $post_id, 'whh-itinerary',     wp_json_encode( $data['itinerary'] ) );
+    if ( isset( $data['excursion_ids'] ) )      update_post_meta( $post_id, 'whh-excursion-ids',      wp_json_encode( $data['excursion_ids'] ) );
+    if ( isset( $data['excursion_included'] ) ) update_post_meta( $post_id, 'whh-excursion-included', wp_json_encode( $data['excursion_included'] ) );
+    if ( isset( $data['city_nights'] ) )        update_post_meta( $post_id, 'whh-city-nights',        wp_json_encode( $data['city_nights'] ) );
+    if ( isset( $data['itinerary'] ) )          update_post_meta( $post_id, 'whh-itinerary',          wp_json_encode( $data['itinerary'] ) );
 }
 
 // ─── Bookings: read from tourmaster_record table ──────────────────────────────
@@ -801,13 +803,13 @@ function whh_print_styles(): void {
     .whh-lib-item-media, .whh-row-media { display: flex; align-items: center; gap: 12px; }
     .whh-lib-thumb { width: 88px; height: 88px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
     .whh-airline-thumb { object-fit: contain; background: #fff; border: 1px solid #eee; padding: 10px; box-sizing: border-box; }
-    .whh-excursion-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .whh-item-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .whh-pill {
         display: inline-block; font-size: 11px; font-weight: 700;
         padding: 3px 10px; border-radius: 999px; letter-spacing: 0.2px;
     }
-    .whh-pill-included     { background: #e8f7ee; color: #1a9a5c; }
-    .whh-pill-not-included { background: #fdf1e0; color: #b8790f; }
+    .whh-pill-included { background: #e8f7ee; color: #1a9a5c; }
+    .whh-pill-excluded { background: #fdeaea; color: #c0392b; }
 
     /* Sidebar */
     .whh-sidebar-box {
@@ -1058,9 +1060,19 @@ function whh_render_detail( array $t ): string {
                 <?php if ( ! empty( $t['itinerary'] ) ): ?>
                 <div class="whh-section">
                     <h2>Itinerary</h2>
-                    <?php foreach ( $t['itinerary'] as $day ): ?>
+                    <?php foreach ( $t['itinerary'] as $day ):
+                        // Itinerary days saved before this field existed default to included.
+                        $day_included = ! isset( $day['included'] ) || ! empty( $day['included'] );
+                    ?>
                     <div class="whh-lib-item">
-                        <strong>Day <?php echo (int) ( $day['day'] ?? 0 ); ?><?php echo ! empty( $day['title'] ) ? ' — ' . esc_html( $day['title'] ) : ''; ?></strong>
+                        <div class="whh-item-head">
+                            <strong>Day <?php echo (int) ( $day['day'] ?? 0 ); ?><?php echo ! empty( $day['title'] ) ? ' — ' . esc_html( $day['title'] ) : ''; ?></strong>
+                            <?php if ( $day_included ): ?>
+                                <span class="whh-pill whh-pill-included">Included</span>
+                            <?php else: ?>
+                                <span class="whh-pill whh-pill-excluded">Excluded</span>
+                            <?php endif; ?>
+                        </div>
                         <?php if ( ! empty( $day['description'] ) ): ?><span class="whh-lib-sub"><?php echo esc_html( $day['description'] ); ?></span><?php endif; ?>
                     </div>
                     <?php endforeach; ?>
@@ -1118,16 +1130,23 @@ function whh_render_detail( array $t ): string {
                 <div class="whh-section">
                     <h2>Excursions</h2>
                     <?php foreach ( $excursions as $ex ):
-                        // Excursions saved before this field existed default to included.
-                        $ex_included = ! isset( $ex['included'] ) || ! empty( $ex['included'] );
+                        // Whether this excursion is included is decided per trip (the
+                        // same excursion can be included on one trip and a paid extra
+                        // on another). Fall back to the excursion library item's own
+                        // default when this trip has no override stored for it yet.
+                        $ex_id        = $ex['id'] ?? '';
+                        $trip_override = $t['excursion_included'][ $ex_id ] ?? null;
+                        $ex_included  = $trip_override !== null
+                            ? ! empty( $trip_override )
+                            : ( ! isset( $ex['included'] ) || ! empty( $ex['included'] ) );
                     ?>
                     <div class="whh-lib-item">
-                        <div class="whh-excursion-head">
+                        <div class="whh-item-head">
                             <strong><?php echo esc_html( $ex['name'] ); ?></strong>
                             <?php if ( $ex_included ): ?>
                                 <span class="whh-pill whh-pill-included">Included</span>
                             <?php else: ?>
-                                <span class="whh-pill whh-pill-not-included">Not Included<?php echo ! empty( $ex['price'] ) ? ' &mdash; EGP ' . number_format( (float) $ex['price'] ) : ''; ?></span>
+                                <span class="whh-pill whh-pill-excluded">Excluded<?php echo ! empty( $ex['price'] ) ? ' &mdash; EGP ' . number_format( (float) $ex['price'] ) : ''; ?></span>
                             <?php endif; ?>
                         </div>
                         <?php if ( ! empty( $ex['description'] ) ): ?><span class="whh-lib-sub"><?php echo esc_html( $ex['description'] ); ?></span><?php endif; ?>

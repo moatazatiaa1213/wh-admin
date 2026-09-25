@@ -138,11 +138,13 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
 
   // ── Day-by-day itinerary — plain state, merged into the payload on submit
   // (same pattern as cityNights above; not part of the zod schema) ──────────
-  type ItineraryDay = { day: number; title: string; description: string }
-  const [itinerary, setItinerary] = useState<ItineraryDay[]>(trip?.itinerary ?? [])
+  type ItineraryDay = { day: number; title: string; description: string; included: boolean }
+  const [itinerary, setItinerary] = useState<ItineraryDay[]>(
+    (trip?.itinerary ?? []).map(d => ({ ...d, included: d.included ?? true }))
+  )
 
   function addDay() {
-    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '' }])
+    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', included: true }])
   }
   function removeDay(index: number) {
     setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })))
@@ -150,6 +152,29 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   function updateDay(index: number, field: 'title' | 'description', value: string) {
     setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)))
   }
+  function updateDayIncluded(index: number, included: boolean) {
+    setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, included } : d)))
+  }
+
+  // ── Per-trip excursion inclusion — whether each selected excursion is
+  // included in THIS trip's price or a paid extra. Same plain-state pattern
+  // as cityNights/itinerary. New selections default from the excursion
+  // library item's own `included` flag. ──────────────────────────────────
+  const [excursionIncluded, setExcursionIncluded] = useState<Record<string, boolean>>(
+    trip?.excursion_included ?? {}
+  )
+  const excursionIds = watch('excursion_ids')
+
+  useEffect(() => {
+    setExcursionIncluded(prev => {
+      const next: Record<string, boolean> = {}
+      for (const id of excursionIds) {
+        next[id] = prev[id] ?? excursions.find(e => e.id === id)?.included ?? true
+      }
+      return next
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [excursionIds.join(',')])
 
   // ── Featured image's WordPress attachment ID — only known right after a
   // fresh upload (see ImageUploadField). Omitted from the payload when unset
@@ -168,6 +193,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           ...data,
           city_nights: cityNights,
           itinerary,
+          excursion_included: excursionIncluded,
           ...(featuredImageId ? { featured_image_id: featuredImageId } : {}),
         }),
       })
@@ -437,6 +463,32 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
         />
       </div>
 
+      {excursionIds.length > 0 && (
+        <div className="space-y-2">
+          <Label className={lbl}>Included in This Trip?</Label>
+          {excursionIds.map(id => {
+            const excursion = excursions.find(e => e.id === id)
+            return (
+              <div key={id} className="flex items-center justify-between gap-3 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-2">
+                <span className="text-sm text-zinc-300">{excursion?.name ?? id}</span>
+                <Select
+                  value={excursionIncluded[id] ? 'included' : 'excluded'}
+                  onValueChange={val => setExcursionIncluded(prev => ({ ...prev, [id]: val === 'included' }))}
+                >
+                  <SelectTrigger className={`${f} h-8 w-[140px]`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#111111] border-[#1c1c1c]">
+                    <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
+                    <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* ── Itinerary ── */}
       <SectionHeader title="Itinerary" />
 
@@ -445,13 +497,27 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
           <div key={index} className="space-y-2 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-3">
             <div className="flex items-center justify-between gap-3">
               <span className="text-xs font-semibold text-zinc-400 whitespace-nowrap">Day {dayItem.day}</span>
-              <button
-                type="button"
-                onClick={() => removeDay(index)}
-                className="text-xs text-red-400 hover:text-red-300 cursor-pointer"
-              >
-                Remove
-              </button>
+              <div className="flex items-center gap-3">
+                <Select
+                  value={dayItem.included ? 'included' : 'excluded'}
+                  onValueChange={val => updateDayIncluded(index, val === 'included')}
+                >
+                  <SelectTrigger className={`${f} h-8 w-[140px]`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#111111] border-[#1c1c1c]">
+                    <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
+                    <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
+                  </SelectContent>
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => removeDay(index)}
+                  className="text-xs text-red-400 hover:text-red-300 cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
             <Input
               value={dayItem.title}

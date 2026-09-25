@@ -98,9 +98,9 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label className={lbl}>Included in Trip Price</Label>
+          <Label className={lbl}>Included by Default</Label>
           <Select
-            defaultValue={included ? 'included' : 'not_included'}
+            defaultValue={included ? 'included' : 'excluded'}
             onValueChange={val => setValue('included', val === 'included')}
           >
             <SelectTrigger className={f}>
@@ -108,9 +108,10 @@ export function ExcursionForm({ excursion }: ExcursionFormProps) {
             </SelectTrigger>
             <SelectContent className="bg-[#111111] border-[#1c1c1c]">
               <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
-              <SelectItem value="not_included" className="text-zinc-300 focus:bg-zinc-800">Not Included</SelectItem>
+              <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-[11px] text-zinc-600">Used as the starting value when this excursion is added to a trip — each trip can override it.</p>
         </div>
         {!included && (
           <div className="space-y-1.5">

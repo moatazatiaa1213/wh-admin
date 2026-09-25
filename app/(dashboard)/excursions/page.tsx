@@ -26,7 +26,7 @@ export default async function ExcursionsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-[#1c1c1c]">
-              {['Name', 'Description', 'Included', 'Actions'].map(h => (
+              {['Name', 'Description', 'Default', 'Actions'].map(h => (
                 <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-5 py-3">
                   {h}
                 </th>
@@ -55,8 +55,8 @@ export default async function ExcursionsPage() {
                         Included
                       </span>
                     ) : (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-800/60 text-amber-400">
-                        {excursion.price ? `+EGP ${excursion.price.toLocaleString()}` : 'Not Included'}
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-950/60 border border-red-800/60 text-red-400">
+                        {excursion.price ? `Excluded — EGP ${excursion.price.toLocaleString()}` : 'Excluded'}
                       </span>
                     )}
                   </td>
