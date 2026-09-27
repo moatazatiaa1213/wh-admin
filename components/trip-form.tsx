@@ -81,6 +81,17 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   const router = useRouter()
   const isEditing = !!trip
 
+  // Drop any selected library IDs that no longer resolve to a real item —
+  // e.g. a City/Hotel/Airline/Excursion that was deleted from its library
+  // after this trip selected it. Without this, a stale ID lingers forever:
+  // the MultiSelect can't render a chip for it (so there's no "×" to remove
+  // it with), yet it keeps getting resaved every time the trip is edited.
+  // Pruning here means the very next save cleans it out for good.
+  const cityIdSet      = new Set(cities.map(c => c.id))
+  const hotelIdSet     = new Set(hotels.map(h => h.id))
+  const airlineIdSet   = new Set(airlines.map(a => a.id))
+  const excursionIdSet = new Set(excursions.map(e => e.id))
+
   const {
     register,
     handleSubmit,
@@ -106,10 +117,10 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       single_rate: trip?.single_rate ?? undefined,
       featured_image: trip?.featured_image ?? '',
       status: trip?.status ?? 'draft',
-      city_ids: trip?.city_ids ?? [],
-      hotel_ids: trip?.hotel_ids ?? [],
-      airline_ids: trip?.airline_ids ?? [],
-      excursion_ids: trip?.excursion_ids ?? [],
+      city_ids: (trip?.city_ids ?? []).filter(id => cityIdSet.has(id)),
+      hotel_ids: (trip?.hotel_ids ?? []).filter(id => hotelIdSet.has(id)),
+      airline_ids: (trip?.airline_ids ?? []).filter(id => airlineIdSet.has(id)),
+      excursion_ids: (trip?.excursion_ids ?? []).filter(id => excursionIdSet.has(id)),
     },
   })
 
