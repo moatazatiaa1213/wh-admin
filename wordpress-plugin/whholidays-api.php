@@ -1077,8 +1077,9 @@ function whh_render_detail( array $t ): string {
                 <div class="whh-section">
                     <h2>Destinations</h2>
                     <?php foreach ( $cities as $i => $c ):
-                        $c_name = esc_html( $c['name'] . ', ' . $c['country'] );
-                        $c_map  = ! empty( $c['map_url'] ) ? esc_url( $c['map_url'] ) : '';
+                        $c_name   = esc_html( $c['name'] . ', ' . $c['country'] );
+                        $c_map    = ! empty( $c['map_url'] ) ? esc_url( $c['map_url'] ) : '';
+                        $c_nights = $t['city_nights'][ $c['id'] ?? '' ] ?? null;
                     ?>
                     <div class="whh-row whh-row-media">
                         <div class="whh-row-media">
@@ -1087,7 +1088,10 @@ function whh_render_detail( array $t ): string {
                             <?php endif; ?>
                             <strong>Destination <?php echo $i + 1; ?></strong>
                         </div>
-                        <span><?php echo $c_map ? "<a href='{$c_map}' target='_blank' rel='noopener'>{$c_name}</a>" : $c_name; ?></span>
+                        <span>
+                            <?php echo $c_map ? "<a href='{$c_map}' target='_blank' rel='noopener'>{$c_name}</a>" : $c_name; ?>
+                            <?php if ( $c_nights ): ?> &middot; <?php echo (int) $c_nights; ?> Nights<?php endif; ?>
+                        </span>
                     </div>
                     <?php endforeach; ?>
                 </div>
