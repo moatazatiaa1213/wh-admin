@@ -826,6 +826,14 @@ function whh_print_styles(): void {
     .whh-lib-item-media, .whh-row-media { display: flex; align-items: center; gap: 12px; }
     .whh-lib-thumb { width: 88px; height: 88px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
     .whh-airline-thumb { object-fit: contain; background: #fff; border: 1px solid #eee; padding: 10px; box-sizing: border-box; }
+    .whh-hotel-website {
+        margin-left: auto; flex-shrink: 0;
+        font-size: 12px; font-weight: 700;
+        color: #c9a227 !important; text-decoration: none;
+        border: 1px solid #c9a227; border-radius: 999px;
+        padding: 6px 14px; white-space: nowrap;
+    }
+    .whh-hotel-website:hover { background: #c9a227; color: #fff !important; }
     .whh-item-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .whh-pill {
         display: inline-block; font-size: 11px; font-weight: 700;
@@ -1105,8 +1113,9 @@ function whh_render_detail( array $t ): string {
                 <div class="whh-section">
                     <h2>Hotels</h2>
                     <?php foreach ( $hotels as $i => $h ):
-                        $h_name = esc_html( $h['name'] );
-                        $h_map  = ! empty( $h['map_url'] ) ? esc_url( $h['map_url'] ) : '';
+                        $h_name    = esc_html( $h['name'] );
+                        $h_map     = ! empty( $h['map_url'] )  ? esc_url( $h['map_url'] )  : '';
+                        $h_website = ! empty( $h['website'] )  ? esc_url( $h['website'] )  : '';
                     ?>
                     <div class="whh-lib-item whh-lib-item-media">
                         <?php if ( ! empty( $h['photo'] ) ): ?>
@@ -1116,6 +1125,9 @@ function whh_render_detail( array $t ): string {
                             <strong>Hotel <?php echo $i + 1; ?> &nbsp; <?php echo $h_map ? "<a href='{$h_map}' target='_blank' rel='noopener'>{$h_name}</a>" : $h_name; ?></strong>
                             <?php if ( ! empty( $h['stars'] ) ): ?><span class="whh-lib-sub"><?php echo str_repeat('★', (int)$h['stars']); ?></span><?php endif; ?>
                         </div>
+                        <?php if ( $h_website ): ?>
+                            <a href="<?php echo $h_website; ?>" target="_blank" rel="noopener" class="whh-hotel-website">Website ↗</a>
+                        <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
