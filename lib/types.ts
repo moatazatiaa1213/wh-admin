@@ -32,16 +32,22 @@ export interface Airline {
 // Inclusion state used for both itinerary days and excursions. `price` only
 // applies when `excluded` — an optional add-on amount for booking it
 // separately; left unset, it's just excluded with nothing to add on.
-export type InclusionStatus = 'excluded' | 'included'
+// 'empty' is a real, explicit "not decided yet" state — new itinerary days
+// and newly-added excursions start there instead of being assumed
+// Included, and it renders no pill at all on the public trip page.
+export type InclusionStatus = 'empty' | 'excluded' | 'included'
 
-// Coerces a stored inclusion value into the current 2-state model. Data
-// saved by an earlier version of this feature may still hold the old
-// boolean (true/false), or the short-lived 3-state strings
-// ('included_free'/'included_paid') — anything that isn't explicitly
-// 'excluded' (string) or `false` defaults to 'included', same as every
-// version of this field has always defaulted.
+// Coerces a stored inclusion value into the current model. Data saved by an
+// earlier version of this feature may still hold the old boolean
+// (true/false), or the short-lived 3-state strings
+// ('included_free'/'included_paid'); those, and the current 'included'
+// string, all normalize to 'included'. 'excluded'/'empty' pass through
+// as-is. A value that's missing entirely — every itinerary day and
+// excursion saved before this field existed — defaults to 'included', so
+// trips that predate this feature keep displaying exactly as before.
 export function normalizeInclusion(raw: unknown): InclusionStatus {
   if (raw === 'excluded' || raw === false) return 'excluded'
+  if (raw === 'empty') return 'empty'
   return 'included'
 }
 

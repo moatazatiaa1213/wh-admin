@@ -145,7 +145,7 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
   )
 
   function addDay() {
-    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', inclusion: 'included' }])
+    setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', inclusion: 'empty' }])
   }
   function removeDay(index: number) {
     setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })))

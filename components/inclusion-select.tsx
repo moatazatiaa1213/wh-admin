@@ -12,10 +12,12 @@ interface InclusionSelectProps {
   className?: string
 }
 
-// Shared Excluded / Included picker. Excluded reveals an optional add-on
-// price (e.g. "book this separately for EGP 500") — left blank, it's just
-// excluded with nothing to add on. Used for the Excursion library default,
-// per-trip excursion overrides, and per-day itinerary inclusion.
+// Shared Empty / Included / Excluded picker. Empty is an explicit "not
+// decided yet" state that renders no pill on the public trip page. Excluded
+// reveals an optional add-on price (e.g. "book this separately for
+// EGP 500") — left blank, it's just excluded with nothing to add on. Used
+// for the Excursion library default, per-trip excursion overrides, and
+// per-day itinerary inclusion.
 export function InclusionSelect({ status, price, onStatusChange, onPriceChange, className }: InclusionSelectProps) {
   const f = 'bg-[#09090b] border-[#1c1c1c] text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-sky-500'
   const showPrice = status === 'excluded'
@@ -27,8 +29,9 @@ export function InclusionSelect({ status, price, onStatusChange, onPriceChange, 
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-[#111111] border-[#1c1c1c]">
-          <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
+          <SelectItem value="empty" className="text-zinc-300 focus:bg-zinc-800">Empty</SelectItem>
           <SelectItem value="included" className="text-zinc-300 focus:bg-zinc-800">Included</SelectItem>
+          <SelectItem value="excluded" className="text-zinc-300 focus:bg-zinc-800">Excluded</SelectItem>
         </SelectContent>
       </Select>
       {showPrice && (
