@@ -144,11 +144,41 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
     (trip?.itinerary ?? []).map(d => ({ ...d, inclusion: normalizeInclusion(d.inclusion) }))
   )
 
+  // Multi-select for bulk-deleting itinerary days (indices into `itinerary`).
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set())
+
   function addDay() {
     setItinerary(prev => [...prev, { day: prev.length + 1, title: '', description: '', inclusion: 'empty' }])
   }
   function removeDay(index: number) {
     setItinerary(prev => prev.filter((_, i) => i !== index).map((d, i) => ({ ...d, day: i + 1 })))
+    // Shift selected indices down past the removed day so an active bulk
+    // selection stays pointed at the same rows.
+    setSelectedDays(prev => {
+      const next = new Set<number>()
+      Array.from(prev).forEach(i => {
+        if (i < index) next.add(i)
+        else if (i > index) next.add(i - 1)
+      })
+      return next
+    })
+  }
+  function toggleDaySelected(index: number) {
+    setSelectedDays(prev => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+  }
+  function toggleAllDaysSelected() {
+    setSelectedDays(prev =>
+      prev.size === itinerary.length ? new Set() : new Set(itinerary.map((_, i) => i))
+    )
+  }
+  function removeSelectedDays() {
+    setItinerary(prev => prev.filter((_, i) => !selectedDays.has(i)).map((d, i) => ({ ...d, day: i + 1 })))
+    setSelectedDays(new Set())
   }
   function updateDay(index: number, field: 'title' | 'description', value: string) {
     setItinerary(prev => prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)))
@@ -493,13 +523,52 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
       )}
 
       {/* ── Itinerary ── */}
-      <SectionHeader title="Itinerary" />
+      <div className="flex items-center justify-between gap-3 pt-4">
+        <div className="flex items-center gap-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 whitespace-nowrap">Itinerary</p>
+          <div className="flex-1 h-px bg-[#1c1c1c]" />
+        </div>
+        {selectedDays.size > 0 && (
+          <button
+            type="button"
+            onClick={removeSelectedDays}
+            className="text-xs font-semibold text-red-400 hover:text-red-300 cursor-pointer whitespace-nowrap"
+          >
+            Delete {selectedDays.size} selected
+          </button>
+        )}
+      </div>
+
+      {itinerary.length > 0 && (
+        <label className="flex items-center gap-2 text-xs text-zinc-500 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={selectedDays.size === itinerary.length}
+            onChange={toggleAllDaysSelected}
+            className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-sky-500 cursor-pointer"
+          />
+          Select all
+        </label>
+      )}
 
       <div className="space-y-3">
         {itinerary.map((dayItem, index) => (
-          <div key={index} className="space-y-2 bg-[#09090b] border border-[#1c1c1c] rounded-md px-3 py-3">
+          <div
+            key={index}
+            className={`space-y-2 border rounded-md px-3 py-3 ${
+              selectedDays.has(index) ? 'bg-sky-950/20 border-sky-800/60' : 'bg-[#09090b] border-[#1c1c1c]'
+            }`}
+          >
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-semibold text-zinc-400 whitespace-nowrap">Day {dayItem.day}</span>
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={selectedDays.has(index)}
+                  onChange={() => toggleDaySelected(index)}
+                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-sky-500 cursor-pointer"
+                />
+                <span className="text-xs font-semibold text-zinc-400 whitespace-nowrap">Day {dayItem.day}</span>
+              </div>
               <div className="flex items-center gap-3">
                 <InclusionSelect
                   status={dayItem.inclusion}
