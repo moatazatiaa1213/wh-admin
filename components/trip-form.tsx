@@ -21,6 +21,7 @@ import { MultiSelect }        from '@/components/multi-select'
 import { ImageUploadField }   from '@/components/image-upload-field'
 import { DatePicker } from '@/components/date-picker'
 import { InclusionSelect } from '@/components/inclusion-select'
+import { X } from 'lucide-react'
 import { formatBaggage } from '@/lib/format-baggage'
 import { TRIP_CATEGORIES, normalizeInclusion } from '@/lib/types'
 import type { Trip, City, Hotel, Airline, Excursion, TripCategory, InclusionStatus } from '@/lib/types'
@@ -140,6 +141,15 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityIds.join(',')])
+
+  // Removes a city from the trip entirely — updates the same city_ids field
+  // the "Select Cities" picker uses, so its chip disappears too. This is the
+  // only way to remove a city whose library entry was since deleted, since
+  // MultiSelect can't render a chip (and therefore no "×") for an ID it
+  // doesn't recognize.
+  function removeCity(id: string) {
+    setValue('city_ids', cityIds.filter(cid => cid !== id))
+  }
 
   // Duration is always the sum of per-city nights (+1 day)
   useEffect(() => {
@@ -458,6 +468,14 @@ export function TripForm({ trip, cities, hotels, airlines, excursions, nextTripN
                     className="w-20 bg-[#111111] border border-[#1c1c1c] rounded px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                   <span className="text-xs text-zinc-500">nights</span>
+                  <button
+                    type="button"
+                    onClick={() => removeCity(id)}
+                    title="Remove city"
+                    className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-950/40 cursor-pointer transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
               </div>
             )
