@@ -10,6 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'WHH_NS', 'whholidays/v1' );
 
+// ─── Google Reviews widget config ──────────────────────────────────────────
+// Powers the [whh_google_reviews] shortcode. Fill these in here, or (for
+// anyone comfortable editing wp-config.php) define them there instead — the
+// defined() guards make a wp-config.php value win automatically.
+//   WHH_GOOGLE_PLACES_API_KEY — Google Cloud API key with "Places API (New)"
+//                                enabled and billing configured.
+//   WHH_GOOGLE_PLACE_ID       — the business's Places API place_id (starts
+//                                with "ChIJ"), NOT the CID or /g/
+//                                knowledge-graph ID from a Maps share link.
+// Until both are filled in, the shortcode silently renders nothing.
+if ( ! defined( 'WHH_GOOGLE_PLACES_API_KEY' ) ) define( 'WHH_GOOGLE_PLACES_API_KEY', '' );
+if ( ! defined( 'WHH_GOOGLE_PLACE_ID' ) )       define( 'WHH_GOOGLE_PLACE_ID', '' );
+
 // Flush rewrite rules on activation so REST routes register immediately.
 register_activation_hook( __FILE__, function () { flush_rewrite_rules(); } );
 
@@ -676,6 +689,7 @@ function whh_meta_inspect(): WP_REST_Response {
 
 add_action( 'wp_head',        'whh_print_styles' );
 add_shortcode( 'whh_trips',   'whh_shortcode_trips' );
+add_shortcode( 'whh_google_reviews', 'whh_shortcode_google_reviews' );
 add_action( 'template_redirect', 'whh_single_tour_override' );
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -891,8 +905,280 @@ function whh_print_styles(): void {
         padding: 7px 0; border-bottom: 1px solid #e8e8e8;
     }
     .whh-why-box li::before { content: "$ "; color: #c9a227; font-weight: 800; }
+
+    /* ── Google Reviews widget ── */
+    .whh-gr-widget {
+        display: flex; align-items: flex-start; gap: 32px;
+        margin: 32px 0;
+    }
+    .whh-gr-summary { flex: 0 0 200px; text-align: center; }
+    .whh-gr-label {
+        font-size: 14px; font-weight: 800; letter-spacing: 1px;
+        color: #1a1a1a; margin: 0 0 8px; text-transform: uppercase;
+    }
+    .whh-gr-stars { display: flex; justify-content: center; gap: 2px; margin-bottom: 8px; }
+    .whh-gr-count { font-size: 13px; color: #666; margin: 0 0 12px; }
+    .whh-gr-count strong { color: #1a1a1a; }
+    .whh-gr-google-logo { display: flex; justify-content: center; }
+    .whh-gr-google-logo svg { height: 22px; width: auto; }
+
+    .whh-gr-carousel-wrap {
+        position: relative; flex: 1; min-width: 0;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .whh-gr-track {
+        display: flex; gap: 16px; overflow-x: auto;
+        scroll-behavior: smooth; scroll-snap-type: x mandatory;
+        scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .whh-gr-track::-webkit-scrollbar { display: none; }
+
+    .whh-gr-card {
+        flex: 0 0 calc((100% - 32px) / 3);
+        scroll-snap-align: start;
+        background: #f8f8f8; border-radius: 10px;
+        padding: 18px 20px; box-sizing: border-box;
+    }
+    .whh-gr-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .whh-gr-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        object-fit: cover; flex-shrink: 0;
+    }
+    .whh-gr-avatar-fallback {
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-weight: 700; font-size: 16px;
+    }
+    .whh-gr-card-meta { min-width: 0; }
+    .whh-gr-name {
+        font-weight: 700; font-size: 14px; color: #1a1a1a; margin: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+    }
+    .whh-gr-date { font-size: 12px; color: #888; margin: 2px 0 0; }
+    .whh-gr-card-rating { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .whh-gr-verified {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 14px; height: 14px; border-radius: 50%;
+        background: #2563eb; color: #fff; font-size: 9px; line-height: 1;
+    }
+    .whh-gr-text { font-size: 13px; color: #555; line-height: 1.55; margin: 0; }
+    .whh-gr-readmore {
+        background: none; border: none; padding: 0; margin-left: 2px;
+        font-size: 13px; color: #888; text-decoration: underline;
+        cursor: pointer; font-weight: 600;
+    }
+    .whh-gr-readmore:hover { color: #555; }
+
+    .whh-gr-arrow {
+        flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+        border: 1px solid #e8e8e8; background: #fff; color: #1a1a1a;
+        font-size: 18px; line-height: 1; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .whh-gr-arrow:hover { background: #f8f8f8; }
+
+    @media (max-width: 900px) {
+        .whh-gr-widget { flex-direction: column; align-items: stretch; }
+        .whh-gr-summary { flex: none; }
+        .whh-gr-card { flex: 0 0 calc((100% - 16px) / 2); }
+    }
+    @media (max-width: 600px) {
+        .whh-gr-card { flex: 0 0 100%; }
+    }
     </style>
     <?php
+}
+
+// ─── [whh_google_reviews] Shortcode ────────────────────────────────────────────
+// Pulls the business's rating + up to 5 reviews from Google Places API (New).
+// Google's free API caps this at 5 reviews, chosen by its own relevance
+// algorithm — there is no way to request more or choose which ones via the
+// official API. The overall rating and total review count are unaffected by
+// that cap. Requires WHH_GOOGLE_PLACES_API_KEY and WHH_GOOGLE_PLACE_ID to be
+// set (see the config block near the top of this file); until then this
+// shortcode renders nothing for visitors.
+
+/**
+ * Fetches (and caches) the business's Google rating + reviews.
+ * Returns null on any failure — missing config, HTTP error, malformed
+ * response, or zero reviews — so the shortcode can degrade to rendering
+ * nothing rather than ever showing broken output.
+ */
+function whh_fetch_google_reviews(): ?array {
+    if ( '' === WHH_GOOGLE_PLACES_API_KEY || '' === WHH_GOOGLE_PLACE_ID ) {
+        return null;
+    }
+
+    $cache_key = 'whh_google_reviews_cache';
+    $cached    = get_transient( $cache_key );
+    if ( false !== $cached ) {
+        return $cached; // may itself be null — a cached failure, to avoid hammering the API on repeat errors
+    }
+
+    $url = 'https://places.googleapis.com/v1/places/' . rawurlencode( WHH_GOOGLE_PLACE_ID );
+
+    $response = wp_remote_get( $url, [
+        'timeout' => 8,
+        'headers' => [
+            'X-Goog-Api-Key'   => WHH_GOOGLE_PLACES_API_KEY,
+            'X-Goog-FieldMask' => 'rating,userRatingCount,reviews,displayName',
+        ],
+    ] );
+
+    if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+        set_transient( $cache_key, null, 15 * MINUTE_IN_SECONDS );
+        return null;
+    }
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( ! is_array( $body ) || empty( $body['reviews'] ) ) {
+        set_transient( $cache_key, null, 15 * MINUTE_IN_SECONDS );
+        return null;
+    }
+
+    $reviews = [];
+    foreach ( $body['reviews'] as $r ) {
+        $reviews[] = [
+            'name'      => $r['authorAttribution']['displayName'] ?? 'Google User',
+            'photo_url' => $r['authorAttribution']['photoUri']    ?? null,
+            'rating'    => (int) ( $r['rating'] ?? 0 ),
+            'date'      => isset( $r['publishTime'] ) ? date_i18n( 'j F Y', strtotime( $r['publishTime'] ) ) : '',
+            'text'      => $r['text']['text'] ?? ( $r['originalText']['text'] ?? '' ),
+        ];
+    }
+
+    $result = [
+        'rating'      => (float) ( $body['rating'] ?? 0 ),
+        'total_count' => (int) ( $body['userRatingCount'] ?? 0 ),
+        'reviews'     => $reviews,
+    ];
+
+    set_transient( $cache_key, $result, 24 * HOUR_IN_SECONDS );
+    return $result;
+}
+
+function whh_google_rating_label( float $r ): string {
+    if ( $r >= 4.5 ) return 'Excellent';
+    if ( $r >= 4.0 ) return 'Great';
+    if ( $r >= 3.0 ) return 'Good';
+    if ( $r >= 2.0 ) return 'Average';
+    return 'Poor';
+}
+
+function whh_gr_stars( float $rating ): string {
+    $full  = (int) round( $rating );
+    $star  = '<svg class="whh-gr-star" viewBox="0 0 24 24" width="16" height="16" fill="#c9a227"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9L5.7 21l1.7-7L2 8.2l7.1-.6z"/></svg>';
+    $empty = '<svg class="whh-gr-star whh-gr-star-empty" viewBox="0 0 24 24" width="16" height="16" fill="#e0e0e0"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.9L5.7 21l1.7-7L2 8.2l7.1-.6z"/></svg>';
+    $full  = max( 0, min( 5, $full ) );
+    return str_repeat( $star, $full ) . str_repeat( $empty, 5 - $full );
+}
+
+function whh_gr_avatar( string $name, ?string $photo_url ): string {
+    if ( $photo_url ) {
+        return '<img class="whh-gr-avatar" src="' . esc_url( $photo_url ) . '" alt="" loading="lazy">';
+    }
+    $palette = [ '#c9a227', '#2563eb', '#1a9a5c', '#c0392b', '#8e44ad', '#e67e22' ];
+    $color   = $palette[ crc32( $name ) % count( $palette ) ];
+    $initial = mb_strtoupper( mb_substr( $name, 0, 1 ) );
+    return '<div class="whh-gr-avatar whh-gr-avatar-fallback" style="background:' . esc_attr( $color ) . '">' . esc_html( $initial ) . '</div>';
+}
+
+function whh_gr_truncate( string $text, int $len ): string {
+    if ( mb_strlen( $text ) <= $len ) return $text;
+    $cut       = mb_substr( $text, 0, $len );
+    $break_at  = mb_strrpos( $cut, ' ' );
+    if ( false !== $break_at ) $cut = mb_substr( $cut, 0, $break_at );
+    return $cut . '…';
+}
+
+function whh_gr_google_logo_svg(): string {
+    return '<svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">'
+        . '<path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>'
+        . '<path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>'
+        . '<path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>'
+        . '<path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>'
+        . '</svg>';
+}
+
+function whh_shortcode_google_reviews( $atts = [] ): string {
+    $data = whh_fetch_google_reviews();
+
+    if ( null === $data ) {
+        if ( current_user_can( 'manage_options' ) ) {
+            return '<!-- whh_google_reviews: no data (check WHH_GOOGLE_PLACES_API_KEY / WHH_GOOGLE_PLACE_ID, or the Google API response) -->';
+        }
+        return '';
+    }
+
+    $label = whh_google_rating_label( $data['rating'] );
+
+    ob_start();
+    ?>
+    <div class="whh-gr-widget">
+        <div class="whh-gr-summary">
+            <p class="whh-gr-label"><?php echo esc_html( strtoupper( $label ) ); ?></p>
+            <div class="whh-gr-stars"><?php echo whh_gr_stars( $data['rating'] ); ?></div>
+            <p class="whh-gr-count">Based on <strong><?php echo esc_html( number_format_i18n( $data['total_count'] ) ); ?></strong> reviews</p>
+            <div class="whh-gr-google-logo"><?php echo whh_gr_google_logo_svg(); ?></div>
+        </div>
+
+        <div class="whh-gr-carousel-wrap">
+            <button type="button" class="whh-gr-arrow whh-gr-arrow-prev" aria-label="Previous reviews">&#8249;</button>
+            <div class="whh-gr-track">
+                <?php foreach ( $data['reviews'] as $r ): ?>
+                <div class="whh-gr-card">
+                    <div class="whh-gr-card-head">
+                        <?php echo whh_gr_avatar( $r['name'], $r['photo_url'] ); ?>
+                        <div class="whh-gr-card-meta">
+                            <p class="whh-gr-name" title="<?php echo esc_attr( $r['name'] ); ?>"><?php echo esc_html( $r['name'] ); ?></p>
+                            <p class="whh-gr-date"><?php echo esc_html( $r['date'] ); ?></p>
+                        </div>
+                    </div>
+                    <div class="whh-gr-card-rating">
+                        <?php echo whh_gr_stars( $r['rating'] ); ?>
+                        <span class="whh-gr-verified" title="Verified via Google">&#10003;</span>
+                    </div>
+                    <?php
+                    $full  = $r['text'];
+                    $short = whh_gr_truncate( $full, 220 );
+                    ?>
+                    <p class="whh-gr-text" data-full="<?php echo esc_attr( $full ); ?>">
+                        <?php echo esc_html( $short ); ?><?php if ( $short !== $full ): ?> <button type="button" class="whh-gr-readmore">Read more</button><?php endif; ?>
+                    </p>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <button type="button" class="whh-gr-arrow whh-gr-arrow-next" aria-label="Next reviews">&#8250;</button>
+        </div>
+    </div>
+    <?php
+    // Bind the carousel + "Read more" handlers once, even if this shortcode
+    // appears more than once on the same page.
+    static $script_printed = false;
+    if ( ! $script_printed ) {
+        $script_printed = true;
+        ?>
+        <script>
+        (function(){
+            document.addEventListener('click', function(e){
+                if (e.target.classList.contains('whh-gr-readmore')) {
+                    var p = e.target.closest('.whh-gr-text');
+                    p.textContent = p.dataset.full;
+                    return;
+                }
+                var arrow = e.target.closest('.whh-gr-arrow');
+                if (!arrow) return;
+                var wrap  = arrow.closest('.whh-gr-carousel-wrap');
+                var track = wrap.querySelector('.whh-gr-track');
+                var card  = track.querySelector('.whh-gr-card');
+                var step  = card ? card.getBoundingClientRect().width + 16 : 300;
+                track.scrollBy({ left: arrow.classList.contains('whh-gr-arrow-next') ? step : -step, behavior: 'smooth' });
+            });
+        })();
+        </script>
+        <?php
+    }
+    return ob_get_clean();
 }
 
 // ─── Title cleaner ────────────────────────────────────────────────────────────
