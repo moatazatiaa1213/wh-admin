@@ -895,6 +895,61 @@ function whh_print_styles(): void {
     <?php
 }
 
+// ─── Homepage: reposition the Elfsight Google Reviews widget ────────────────
+// The widget is pasted as raw embed code into the Homepage's classic content,
+// which this theme renders *above* all the page-builder sections (hero,
+// Popular Destinations, Popular Trips, Customer Reviews, Recent Articles) —
+// so it can't be drag-reordered in the page builder. Instead, once the page
+// has loaded, move the widget's DOM node to sit right after the "Customer
+// Reviews" section. Elfsight's script finds its widget elements by class
+// regardless of where they sit in the DOM, so relocating the node doesn't
+// break it.
+add_action( 'wp_footer', 'whh_reposition_reviews_widget' );
+
+function whh_reposition_reviews_widget(): void {
+    if ( ! is_front_page() && ! is_page( 'homepage' ) ) return;
+    ?>
+    <script>
+    ( function () {
+        function run() {
+            var widget = document.querySelector( '[class*="elfsight-app-"]' );
+            if ( ! widget ) return;
+
+            // Carry along whatever classic-content wrapper directly holds the
+            // widget (so its own spacing/markup travels with it), not just the div.
+            var toMove = widget;
+            while ( toMove.parentElement && ! toMove.parentElement.classList.contains( 'entry-content' )
+                     && toMove.parentElement.tagName !== 'BODY' ) {
+                toMove = toMove.parentElement;
+            }
+
+            var target = document.getElementById( 'gdlr-core-wrapper-4' );
+            if ( ! target || target.contains( toMove ) ) {
+                // Fallback: locate the page-builder section whose text mentions
+                // "Customer Reviews", in case the wrapper id ever shifts.
+                var sections = document.querySelectorAll( '.gdlr-core-pbf-wrapper' );
+                for ( var i = 0; i < sections.length; i++ ) {
+                    if ( /customer reviews/i.test( sections[ i ].textContent ) ) {
+                        target = sections[ i ];
+                        break;
+                    }
+                }
+            }
+            if ( ! target || target.contains( toMove ) || toMove === target ) return;
+
+            target.parentNode.insertBefore( toMove, target.nextSibling );
+        }
+
+        if ( document.readyState === 'complete' ) {
+            run();
+        } else {
+            window.addEventListener( 'load', run );
+        }
+    } )();
+    </script>
+    <?php
+}
+
 // ─── Title cleaner ────────────────────────────────────────────────────────────
 
 /**
