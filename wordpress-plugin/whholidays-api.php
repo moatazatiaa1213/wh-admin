@@ -913,18 +913,8 @@ function whh_reposition_reviews_widget(): void {
     ( function () {
         function run() {
             var widget = document.querySelector( '[class*="elfsight-app-"]' );
-            if ( ! widget ) return;
-
-            // Carry along whatever classic-content wrapper directly holds the
-            // widget (so its own spacing/markup travels with it), not just the div.
-            var toMove = widget;
-            while ( toMove.parentElement && ! toMove.parentElement.classList.contains( 'entry-content' )
-                     && toMove.parentElement.tagName !== 'BODY' ) {
-                toMove = toMove.parentElement;
-            }
-
             var target = document.getElementById( 'gdlr-core-wrapper-4' );
-            if ( ! target || target.contains( toMove ) ) {
+            if ( ! target ) {
                 // Fallback: locate the page-builder section whose text mentions
                 // "Customer Reviews", in case the wrapper id ever shifts.
                 var sections = document.querySelectorAll( '.gdlr-core-pbf-wrapper' );
@@ -935,9 +925,9 @@ function whh_reposition_reviews_widget(): void {
                     }
                 }
             }
-            if ( ! target || target.contains( toMove ) || toMove === target ) return;
+            if ( ! widget || ! target || target.contains( widget ) ) return;
 
-            target.parentNode.insertBefore( toMove, target.nextSibling );
+            target.parentNode.insertBefore( widget, target.nextSibling );
         }
 
         if ( document.readyState === 'complete' ) {
