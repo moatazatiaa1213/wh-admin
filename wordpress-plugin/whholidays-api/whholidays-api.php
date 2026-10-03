@@ -930,11 +930,11 @@ function whh_reposition_reviews_widget(): void {
             target.parentNode.insertBefore( widget, target.nextSibling );
         }
 
-        if ( document.readyState === 'complete' ) {
-            run();
-        } else {
-            window.addEventListener( 'load', run );
-        }
+        // This script is printed late (via wp_footer), after the widget and
+        // target are already in the HTML, so there's no need to wait for
+        // DOMContentLoaded or the full window "load" event (images, fonts,
+        // the slider, Elfsight's own script) — run immediately.
+        run();
     } )();
     </script>
     <?php
