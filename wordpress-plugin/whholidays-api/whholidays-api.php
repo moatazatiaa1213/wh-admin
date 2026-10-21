@@ -940,6 +940,25 @@ function whh_reposition_reviews_widget(): void {
     <?php
 }
 
+// ─── Footer: swap the old "Call Us" number for the two current numbers ──────
+// The footer "Call Us" block is a classic Text widget (see widget_text_content
+// below) whose content is just static HTML saved in the database. Swapping the
+// number here — server-side, before the page is sent to the browser — avoids
+// any client-side flash of the old number and works regardless of caching.
+add_filter( 'widget_text_content', 'whh_fix_footer_phone_number' );
+add_filter( 'widget_text',         'whh_fix_footer_phone_number' ); // legacy fallback
+
+function whh_fix_footer_phone_number( string $text ): string {
+    if ( strpos( $text, '+202 241 74188' ) === false ) {
+        return $text;
+    }
+    return str_replace(
+        '+202 241 74188',
+        '+20 12 00170600</span><br /><span style="font-size: 18px; color: #fff;">+20 12 00170700',
+        $text
+    );
+}
+
 // ─── Title cleaner ────────────────────────────────────────────────────────────
 
 /**
