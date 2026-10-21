@@ -954,7 +954,7 @@ function whh_fix_footer_phone_number( string $text ): string {
     }
     return str_replace(
         '+202 241 74188',
-        '+20 12 00170600</span><br /><span style="font-size: 18px; color: #fff;">+20 12 00170700',
+        '<a href="tel:+201200170600" style="color:#fff; text-decoration:none;">+20 12 00170600</a></span><br /><span style="font-size: 18px; color: #fff;"><a href="tel:+201200170700" style="color:#fff; text-decoration:none;">+20 12 00170700</a>',
         $text
     );
 }
